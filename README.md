@@ -8,6 +8,8 @@
 
 ## 协议简述
 
+### `ReliableSocket`
+
 这个简单的 `TlsUdpProtocol` 项目在实现可靠的传输层协议 `ReliableSocket` 时忽略了以下这些问题：
 
 1. **不考虑**服务器同时为**多个客户端**提供服务的情况，客户端连接之后不会进行线程新增、分配资源等工作；
@@ -18,25 +20,11 @@
 
 `ReliableSocket` 建立连接的过程：
 
-```mermaid
-graph TD;
+![ReliableSocket](./ReliableSocket.svg)
 
-subgraph 服务端
-	SvSt1["初始化"];
-	SvSt1-->|"startListen() 监听端口"|SvSt2
-	SvSt2["监听"];
-end
+使用这个类库只需要，调用 `setPackets`, `sendPackets`，`startListen` 这三个函数即可。
 
-subgraph 客户端
-	ClSt1["初始化"];
-	ClSt1-->|"setPackets() 加载待传送内容"|ClSt2
-	ClSt2["准备"];
-	ClSt2-->|等待|ClSt3
-	ClSt3["接收"];
-end
-
-ClSt2-->|"connectRequet() 总长度等信息"|SvSt2
-```
+### `SecureSocket`
 
 安全层建立连接:
 

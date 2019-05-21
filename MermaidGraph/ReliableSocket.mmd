@@ -1,0 +1,36 @@
+graph TD;
+
+subgraph 服务端
+	SvSt1["初始化"]; SvSt1-->|"绑定端口"|SvSt2;
+	subgraph startListen
+        SvSt2["监听"]; SvSt2-->|"recieveMessage() 等待接受"|SvSt3
+        SvSt3["接收"]; SvSt3-->|"completeTask()"|SvSt4
+        SvSt4["完成接收"];
+    end
+    SvSt4-->|"~ReliableSocket()"|SvSt5
+    SvSt5["释放资源"]
+end
+
+subgraph 客户端
+	ClSt1["初始化"];
+	ClSt1-->|"setPackets() 加载待传送内容"|ClSt2
+	subgraph sendPackets
+        ClSt2["准备"];
+        ClSt2-->|等待|ClSt3
+        ClSt3["发送"]; ClSt4["发送1"]; ClSt5["发送2"]; ClSt6["发送3"]; ClSt7["..."];
+        ClSt8["等待1"]; ClSt9["等待2"]; ClSt10["等待3"]; ClSt11["..."]
+        ClSt3-.->ClSt4; ClSt3-.->ClSt5; ClSt3-.->ClSt6; ClSt3-.->ClSt7;
+        ClSt4-->ClSt8; ClSt5-->ClSt9; ClSt6-->ClSt10; ClSt7-->ClSt11;
+        ClSt8-->|"超时重传"|ClSt4;
+        ClSt8-.->ClSt12; ClSt9-.->ClSt12; ClSt10-.->ClSt12; ClSt11-.->ClSt12;
+        ClSt12["等待"];
+	end
+	ClSt12-->|"~ReliableSocket()"|ClSt13
+    ClSt13["释放资源"];
+end
+
+ClSt2-->|"connectRequet() 总长度等信息"|SvSt2
+SvSt2-->|"ackBack()"|ClSt3
+ClSt4-.->SvSt3; ClSt5-.->SvSt3; ClSt6-.->SvSt3; ClSt7-.->SvSt3;
+SvSt3-.->ClSt8; SvSt3-.->ClSt9; SvSt3-.->ClSt10; SvSt3-.->ClSt11;
+SvSt4-->|"finBack()"|ClSt12
