@@ -188,89 +188,22 @@ protected:
 };
 
 /**
- *   TCP socket for communication with other TCP sockets
- */
-class TCPSocket : public CommunicatingSocket {
-public:
-    /**
-     *   Construct a TCP socket with no connection
-     *   @exception SocketException thrown if unable to create TCP socket
-     */
-    TCPSocket() throw(SocketException);
-
-    /**
-     *   Construct a TCP socket with a connection to the given foreign address
-     *   and port
-     *   @param foreignAddress foreign address (IP address or name)
-     *   @param foreignPort foreign port
-     *   @exception SocketException thrown if unable to create TCP socket
-     */
-    TCPSocket(const string &foreignAddress, unsigned short foreignPort)
-    throw(SocketException);
-
-private:
-    // Access for TCPServerSocket::accept() connection creation
-    friend class TCPServerSocket;
-    TCPSocket(int newConnSD);
-};
-
-/**
- *   TCP socket class for servers
- */
-class TCPServerSocket : public Socket {
-public:
-    /**
-     *   Construct a TCP socket for use with a server, accepting connections
-     *   on the specified port on any interface
-     *   @param localPort local port of server socket, a value of zero will
-     *                   give a system-assigned unused port
-     *   @param queueLen maximum queue length for outstanding
-     *                   connection requests (default 5)
-     *   @exception SocketException thrown if unable to create TCP server socket
-     */
-    TCPServerSocket(unsigned short localPort, int queueLen = 5)
-    throw(SocketException);
-
-    /**
-     *   Construct a TCP socket for use with a server, accepting connections
-     *   on the specified port on the interface specified by the given address
-     *   @param localAddress local interface (address) of server socket
-     *   @param localPort local port of server socket
-     *   @param queueLen maximum queue length for outstanding
-     *                   connection requests (default 5)
-     *   @exception SocketException thrown if unable to create TCP server socket
-     */
-    TCPServerSocket(const string &localAddress, unsigned short localPort,
-                    int queueLen = 5) throw(SocketException);
-
-    /**
-     *   Blocks until a new connection is established on this socket or error
-     *   @return new connection socket
-     *   @exception SocketException thrown if attempt to accept a new connection fails
-     */
-    TCPSocket *accept() throw(SocketException);
-
-private:
-    void setListen(int queueLen) throw(SocketException);
-};
-
-/**
   *   UDP socket class
   */
-class UDPSocket : public CommunicatingSocket {
+class UdpSocket : public CommunicatingSocket {
 public:
     /**
      *   Construct a UDP socket
      *   @exception SocketException thrown if unable to create UDP socket
      */
-    UDPSocket() throw(SocketException);
+    UdpSocket() throw(SocketException);
 
     /**
      *   Construct a UDP socket with the given local port
      *   @param localPort local port
      *   @exception SocketException thrown if unable to create UDP socket
      */
-    UDPSocket(unsigned short localPort) throw(SocketException);
+    UdpSocket(unsigned short localPort) throw(SocketException);
 
     /**
      *   Construct a UDP socket with the given local port and address
@@ -278,7 +211,7 @@ public:
      *   @param localPort local port
      *   @exception SocketException thrown if unable to create UDP socket
      */
-    UDPSocket(const string &localAddress, unsigned short localPort)
+    UdpSocket(const string &localAddress, unsigned short localPort)
     throw(SocketException);
 
     /**

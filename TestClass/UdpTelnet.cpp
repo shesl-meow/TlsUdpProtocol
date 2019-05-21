@@ -21,7 +21,7 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "../UDPSocket.h"      // For UDPSocket and SocketException
+#include "../UdpSocket.h"      // For UDPSocket and SocketException
 #include <iostream>               // For cout and cerr
 #include <cstdlib>                // For atoi()
 #include <cstring>                // For strlen()
@@ -37,24 +37,24 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    string servAddress = argv[1];               // First arg: server address
+    string servAddress = argv[1];               // First arg: Server address
     char *echoString = new char[ECHOMAX];       // Second arg: string to echo
     int echoStringLen;                          // Length of string to echo
     unsigned short echoServPort = Socket::resolveService(argv[2], "udp");
 
     try {
-        UDPSocket sock;
+        UdpSocket sock;
         while(true){
-            // Read the string from console
             cout << "> ";
-            cin >> echoString;
+            cin >> echoString;                  // Read the string from console
             echoStringLen = strlen(echoString);
+
             if (echoStringLen > ECHOMAX) {              // Check input length
                 cerr << "Echo string too long" << endl;
                 exit(1);
             }
 
-            // Send the string to the server
+            // Send the string to the Server
             sock.sendTo(echoString, echoStringLen, servAddress, echoServPort);
 
             // Receive a response
