@@ -13,8 +13,17 @@ int main(int argc, char *argv[]){
 
     unsigned short serverPort = atoi(argv[1]);     // First arg:  local port
     try {
+
         ReliableSocket sock(serverPort, "/media/data/program/git/TlsUdpProtocol/config.json");
-        sock.setPackets("I am a pigger.");
+        while (true) {
+            sock.receiveMessage();
+            char * message = sock.readMessage();
+            auto str = sock.getPeerAddress();
+            cout << "Recieved from " << sock.getPeerAddress() << ":" <<
+                sock.getPeerPort() << ": " << message << endl;
+            delete []message;
+            sock.setPeer("", 0);
+        }
     } catch (SocketException &e) {
         cerr << e.what() << endl;
         exit(1);

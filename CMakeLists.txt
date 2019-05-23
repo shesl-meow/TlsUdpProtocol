@@ -7,4 +7,7 @@ add_executable(udptelnet TestClass/UdpTelnet.cpp UdpSocket.cpp)
 add_executable(udpserver TestClass/UdpServer.cpp UdpSocket.cpp)
 
 add_executable(reliableserver TestClass/ReliableServer.cpp ReliableSocket.cpp UdpSocket.cpp)
-target_link_libraries(reliableserver jsoncpp)
+target_link_libraries(reliableserver jsoncpp pthread)
+
+add_executable(reliabletelnet TestClass/ReliableTelnet.cpp ReliableSocket.cpp UdpSocket.cpp)
+target_link_libraries(reliabletelnet jsoncpp pthread)

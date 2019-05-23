@@ -3,7 +3,7 @@ graph TD;
 subgraph 服务端
 	SvSt1["初始化"]; SvSt1-->|"绑定端口"|SvSt2;
 	subgraph startListen
-        SvSt2["监听"]; SvSt2-->|"recieveMessage() 等待接受"|SvSt3
+        SvSt2["监听"]; SvSt2-->|"receiveMessage() 等待接受"|SvSt3
         SvSt3["接收"]; SvSt3-->|"completeTask()"|SvSt4
         SvSt4["完成接收"];
     end
