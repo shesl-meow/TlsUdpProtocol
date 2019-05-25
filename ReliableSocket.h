@@ -17,7 +17,7 @@ using namespace std::chrono_literals;   //  0ms, 1s
 /**
   *   Implement a reliable socket from UDP socket
   */
-class ReliableSocket: protected UdpSocket {
+class ReliableSocket: public UdpSocket {
 
 private:
     /**
@@ -49,10 +49,10 @@ private:
      * Four function that generate a formatted packet struct
      * @return a formatted packet struct
      */
-    formatPacket getHanPacket() const;
+    formatPacket getHanPacket(bool isMsgHan = true) const;
     formatPacket getAckPacket(unsigned short seqNumber, bool isHandShake = false) const throw(SocketException);
     formatPacket getMsgPacket(unsigned short seqNumber) const throw(SocketException);
-    formatPacket getFinPacket(bool isMsgFin) const;
+    formatPacket getFinPacket(bool isMsgFin = true) const;
 
 public:
     /**
@@ -95,14 +95,37 @@ public:
      */
     void setPackets(const string& messageBody) throw(SocketException);
 
-    char *readMessage() const;
+    /**
+     * Get message length of the combined packets
+     * @return message length
+     */
+    unsigned int getMessageLength() const;
 
     /**
-     * Set the peer address and port, leave default indicate any address
-     * @param pAddress peer IP address
-     * @param pPort peer port
+     * Combine seperated packets into a char array,
+     *  with the help of dest length, original message can be
      */
-    void setPeer(const string& pAddress, unsigned short pPort);
+    void readMessage(char *destBuffer, int destBufferSize) const throw(SocketException);
+
+    /**
+     * Server side socket should call this function bind its address and port first
+     * @exception you shouldn't call this function when you have already bind once
+     */
+     void bindLocalAddressPort (const string& address, unsigned short port) throw(SocketException);
+
+     /**
+      * Waiting for the first handshake packets.
+      * Server side socket should call this function first.
+      */
+     void startListen();
+
+     /**
+      * Client side socket should call this function bind its peer address and port,
+      *     and send the first handshake packet.
+      * @param address foreigner peer address
+      * @param port foreigner peer port
+      */
+     void connectForeignerAddressPort (const string& address, unsigned short port) throw(SocketException);
 
     string getPeerAddress() const {return peerAddress;}
 

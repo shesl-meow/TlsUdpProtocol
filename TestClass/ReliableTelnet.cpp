@@ -22,12 +22,14 @@ int main(int argc, char *argv[]) {
 
     try {
         ReliableSocket sock("/media/data/program/git/TlsUdpProtocol/config.json");
+        // sock.connect(servAddress, servPort);
+        sock.connectForeignerAddressPort(servAddress, servPort);
         while(true){
             cout << "> "; cin >> echoString;
 
             // Send the string to the Server
             sock.setPackets(echoString);
-            sock.setPeer(servAddress, servPort);
+            sock.connectForeignerAddressPort(servAddress, servPort);
             sock.sendMessage();
         }
     } catch (SocketException &e) {

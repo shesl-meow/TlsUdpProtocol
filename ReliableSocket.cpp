@@ -13,6 +13,7 @@
 #include <sstream>          // convert string to int
 #include <thread>
 #include "json/json.h"      // Parse config string
+#include "sys/socket.h"     // setsockopt()
 
 /**
  *  Const value for parsing flag.
@@ -48,13 +49,15 @@ char* ReliableSocket::deparsePacket(ReliableSocket::formatPacket fpacket) {
     return packet;
 }
 
-ReliableSocket::formatPacket ReliableSocket::getHanPacket() const {
-    string mLength = to_string(messageLength);
+ReliableSocket::formatPacket ReliableSocket::getHanPacket(bool isMsgHan) const {
     formatPacket hpacket;
-    hpacket.bodySize = mLength.size();
     hpacket.flag = HAN_FLAG;
-    hpacket.packetBody = new char(hpacket.bodySize);
-    memcpy(hpacket.packetBody, mLength.c_str(), mLength.size());
+    if (isMsgHan) {
+        string mLength = to_string(messageLength);
+        hpacket.bodySize = mLength.size();
+        hpacket.packetBody = new char(hpacket.bodySize);
+        memcpy(hpacket.packetBody, mLength.c_str(), mLength.size());
+    }
     return hpacket;
 }
 
@@ -146,6 +149,20 @@ void ReliableSocket::loadConfig(const char *configPath) {
     if (packetSize == 0) packetSize = 1024;
     if (bufferSize == 0) bufferSize = 255;
     if (retryTimes == 0) retryTimes = 3;
+
+    // TODO: apply timout interval config
+#ifdef WIN32
+    DWORD timeout = timeoutInterval.count();
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+#else
+    struct timeval timeoutStruct = {0, 0};
+    timeoutStruct.tv_sec = timeoutInterval.count() / 1000;
+    timeoutStruct.tv_usec = (timeoutInterval.count() % 1000) * 1000;
+    setsockopt(sockDesc, SOL_SOCKET, SO_RCVTIMEO, &timeoutStruct, sizeof(timeoutStruct));
+#endif
+#ifdef RELIABLE_DEBUG
+    cout << "Set timeout: " << timeoutInterval.count() << "ms" << endl;
+#endif
 }
 
 void ReliableSocket::setPackets(const string &messageBody) throw(SocketException) {
@@ -168,32 +185,99 @@ void ReliableSocket::setPackets(const string &messageBody) throw(SocketException
         memcpy(packet, messageBody.substr(messageLength - messageLength % packetSize).c_str(), packetSize);
         packetsBuffer.push_back(packet); packetsConfirm.push_back(false);
     }
+#ifdef RELIABLE_DEBUG
+    cout << "Set packet: " << messageBody << endl;
+#endif
 }
 
-char* ReliableSocket::readMessage() const {
-    char *message = new char(messageLength + 1);
+unsigned int ReliableSocket::getMessageLength() const {return messageLength;}
+
+void ReliableSocket::readMessage(char *destBuffer, int destBufferSize) const throw(SocketException) {
+    if (destBufferSize <= messageLength) {
+        throw SocketException("Please passed a buffer with more space.");
+    }
     for(int i = 0; i < messageLength / packetSize; ++i) {
-        memcpy(message + i*packetSize, packetsBuffer.at(i), packetSize);
+        memcpy(destBuffer + i*packetSize, packetsBuffer.at(i), packetSize);
     }
     if (messageLength % packetSize != 0) {
-        memcpy(message + messageLength - messageLength % packetSize,
+        memcpy(destBuffer + messageLength - messageLength % packetSize,
                 packetsBuffer.at(messageLength / packetSize), messageLength % packetSize);
     }
-    message[messageLength] = '\0';
-    return message;
+    destBuffer[messageLength] = '\0';
 }
 
-void ReliableSocket::setPeer(const string &pAddress, unsigned short pPort) {
-    peerAddress = pAddress, peerPort = pPort;
+void ReliableSocket::bindLocalAddressPort(const string &address, unsigned short port)
+throw(SocketException) {
+    this->setLocalAddressAndPort(address, port);
+#ifdef RELIABLE_DEBUG
+    cout << "Bind local: " << address << ":" << port << endl;
+#endif
+}
+
+void ReliableSocket::startListen() {
+    char *receiveBuffer = new char(bufferSize);
+    unsigned int receiveSize = 0;
+    string sourceAddress;
+    unsigned short sourcePort;
+#ifdef RELIABLE_DEBUG
+    cout << "Start listening..." << endl;
+#endif
+    // TODO: receive first handshake packet from peer side.
+    while (true) {
+        receiveSize = recvFrom(receiveBuffer, bufferSize, sourceAddress, sourcePort);
+        if (receiveSize == -1) continue;
+        auto fpacket = parsePacket(receiveBuffer);
+        delete fpacket.packetBody;
+        if ( ((fpacket.flag ^ HAN_FLAG) == 0u) && (fpacket.bodySize == 0u)) break;
+    }
+    connect(sourceAddress, sourcePort);
+    delete receiveBuffer;
+#ifdef RELIABLE_DEBUG
+    cout << "Connect to " << getForeignAddress() << ":" << getForeignPort() << endl;
+#endif
+
+    // TODO: send back ack of first handshake packet
+    auto hpacket = getHanPacket(false);
+    char *packet = deparsePacket(hpacket);
+    this->send(packet, hpacket.bodySize + 6);
+    delete packet;
+    delete hpacket.packetBody;
+}
+
+void ReliableSocket::connectForeignerAddressPort(const string &address, unsigned short port)
+throw(SocketException) {
+    // TODO: set default send target, then send handshake packet
+    this->connect(address, port);
+    auto hpacket = getHanPacket(false);
+    char *packet  = deparsePacket(hpacket);
+    send(packet, hpacket.bodySize + 6);
+    delete []packet;
+    delete hpacket.packetBody;
+
+    // TODO: receive first handshake packet ack.
+    char *receiveBuffer = new char(bufferSize);
+    unsigned int receiveSize;
+    while (true) {
+        receiveSize = this->recv(receiveBuffer, bufferSize);
+        if (receiveSize == -1) continue;
+        auto fpacket = parsePacket(receiveBuffer);
+        delete fpacket.packetBody;
+        if ( ((fpacket.flag ^ HAN_FLAG) == 0u) && fpacket.bodySize == 0u ) break;
+    }
+#ifdef RELIABLE_DEBUG
+    cout << "Connect to " << getForeignAddress() << ":" << getForeignPort() << endl;
+#endif
 }
 
 void ReliableSocket::receiveMessage() throw(SocketException) {
     // TODO: STEP1 -- listen handshake packet
     char *receiveBuffer = new char(bufferSize);
     int receiveSize = 0;
+
     string sourceAddress;
     unsigned short sourcePort = 0;
     while (true) {
+        // receiveSize = recv(receiveBuffer, bufferSize);
         receiveSize = recvFrom(receiveBuffer, bufferSize, sourceAddress, sourcePort);
         auto fpacket = parsePacket(receiveBuffer);
         if (
@@ -203,6 +287,9 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
         ){ delete []fpacket.packetBody; continue;}
 
         peerAddress = sourceAddress, peerPort = sourcePort;
+        connect(peerAddress, peerPort);
+        // peerAddress = getForeignAddress(), peerPort = getForeignPort();
+        cout << "Connected to" << getForeignAddress() << ":" << getForeignPort() << endl;
         char *endBody = fpacket.packetBody + fpacket.bodySize;
         auto mLength = strtol(fpacket.packetBody, &endBody, 10);
 
@@ -256,7 +343,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
 
 void ReliableSocket::sendMessage() throw(SocketException) {
     // TODO: STEP1 -- send handshake packet
-    auto hpacket = getHanPacket();
+    auto hpacket = getHanPacket(true);
     char *packet = deparsePacket(hpacket);
     bool handshakeSuccess = false;
     auto t = thread([this, hpacket, &handshakeSuccess]{

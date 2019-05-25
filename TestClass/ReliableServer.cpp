@@ -6,23 +6,27 @@
 #include <cstdlib>              // For atoi()
 
 int main(int argc, char *argv[]){
-    if (argc != 2) {                  // Test for correct number of parameters
-        cerr << "Usage: " << argv[0] << " <Server Port>" << endl;
+    if (argc != 3) {                  // Test for correct number of parameters
+        cerr << "Usage: " << argv[0] << " <Server Address> <Server Port>" << endl;
         exit(1);
     }
 
-    unsigned short serverPort = atoi(argv[1]);     // First arg:  local port
+    string serverAddress = argv[1];
+    unsigned short serverPort = atoi(argv[2]);     // First arg:  local port
     try {
+        ReliableSocket sock("/media/data/program/git/TlsUdpProtocol/config.json");
+        sock.bindLocalAddressPort(serverAddress, serverPort);
+        sock.startListen();
 
-        ReliableSocket sock(serverPort, "/media/data/program/git/TlsUdpProtocol/config.json");
         while (true) {
             sock.receiveMessage();
-            char * message = sock.readMessage();
-            auto str = sock.getPeerAddress();
-            cout << "Recieved from " << sock.getPeerAddress() << ":" <<
+
+            auto len = sock.getMessageLength();
+            char *message = new char(len + 1);
+            sock.readMessage(message, len + 1);
+            cout << "received from " << sock.getPeerAddress() << ":" <<
                 sock.getPeerPort() << ": " << message << endl;
             delete []message;
-            sock.setPeer("", 0);
         }
     } catch (SocketException &e) {
         cerr << e.what() << endl;
