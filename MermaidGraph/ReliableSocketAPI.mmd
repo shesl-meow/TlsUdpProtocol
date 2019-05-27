@@ -1,0 +1,20 @@
+graph TD;
+
+subgraph 服务端
+	S1("ReliableSocket()")-->|绑定本地端口|S2["bindLocalAddressPort()"]
+	S2-->|开始监听|S3["startListen()"];
+	S3-->S4[....];
+	S4-->|建立连接|S5["receiveMessage()"]
+	S5-->S6[...]
+end
+
+subgraph 客户端
+	C1("ReliableSocket()")-->|连接服务端|C2["connectForeignAddreessPort()"];
+	C2-->C3[...];
+	C3-->|建立连接|C4["sendMessage()"]
+	C4-->C5[...]
+end
+
+C2-->|握手包|S4;
+S4-->|握手ACK|C3;
+C4-->|Message Packets|S5

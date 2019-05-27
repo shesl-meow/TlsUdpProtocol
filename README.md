@@ -1,3 +1,5 @@
+
+
 # README
 
 ## 运行环境
@@ -25,11 +27,15 @@
 | :-------: | :--------: | :--------: | :--------: | :----------: | :----------: | :--------: |
 | 包的长度  | 包的序列号 | 握手标志位 | 结束标志位 | `ACK` 标志位 | `MSG` 标志位 |  尚未使用  |
 
-`ReliableSocket` 建立连接的过程：
+`ReliableSocket` 建立大致的连接过程（有过调整）：
 
-![ReliableSocket](./ReliableSocket.svg)
+- 程序内部逻辑：
 
-使用这个类库只需要，调用 `setPackets`, `sendPackets`，`startListen` 这三个函数即可。
+  ![ReliableSocket](./ReliableSocket.svg)
+
+- 调用的 `API` 函数尽量的模拟 TCP 的 API 函数：
+
+  ![ReliableSocketAPI](./ReliableSocketAPI.svg)
 
 ### `SecureSocket`
 
