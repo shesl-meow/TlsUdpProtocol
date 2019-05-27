@@ -24,9 +24,9 @@ int main(int argc, char *argv[]){
             auto len = sock.getMessageLength();
             char *message = new char(len + 1);
             sock.readMessage(message, len + 1);
-            cout << "received from " << sock.getPeerAddress() << ":" <<
-                sock.getPeerPort() << ": " << message << endl;
-            delete []message;
+            cout << "received from " << sock.getForeignAddress() << ":" <<
+                sock.getForeignPort() << ": " << message << endl;
+            delete message;
         }
     } catch (SocketException &e) {
         cerr << e.what() << endl;

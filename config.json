@@ -1,5 +1,5 @@
 {
-  "timeoutInterval": 10000,
+  "timeoutInterval": 1000,
   "packetSize": 3,
   "retryTimes": 3,
   "bufferSize": 255

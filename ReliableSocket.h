@@ -17,7 +17,7 @@ using namespace std::chrono_literals;   //  0ms, 1s
 /**
   *   Implement a reliable socket from UDP socket
   */
-class ReliableSocket: public UdpSocket {
+class ReliableSocket: protected UdpSocket {
 
 private:
     /**
@@ -49,8 +49,10 @@ private:
      * Four function that generate a formatted packet struct
      * @return a formatted packet struct
      */
-    formatPacket getHanPacket(bool isMsgHan = true) const;
-    formatPacket getAckPacket(unsigned short seqNumber, bool isHandShake = false) const throw(SocketException);
+    formatPacket getHanPacket() const;
+    formatPacket getLenPacket() const;
+    formatPacket getMsgAckPacket(unsigned short seqNumber) const throw(SocketException);
+    formatPacket getLenAckPacket() const throw(SocketException);
     formatPacket getMsgPacket(unsigned short seqNumber) const throw(SocketException);
     formatPacket getFinPacket(bool isMsgFin = true) const;
 
@@ -96,6 +98,12 @@ public:
     void setPackets(const string& messageBody) throw(SocketException);
 
     /**
+     * Accept integer as parameter. It will malloc empty space with message length.
+     * @param messageLength message length
+     */
+    void setPackets(unsigned int mLength) throw(SocketException);
+
+    /**
      * Get message length of the combined packets
      * @return message length
      */
@@ -122,14 +130,14 @@ public:
      /**
       * Client side socket should call this function bind its peer address and port,
       *     and send the first handshake packet.
-      * @param address foreigner peer address
-      * @param port foreigner peer port
+      * @param address Foreign peer address
+      * @param port Foreign peer port
       */
-     void connectForeignerAddressPort (const string& address, unsigned short port) throw(SocketException);
+     void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException);
 
-    string getPeerAddress() const {return peerAddress;}
+    string getForeignAddress() const {return UdpSocket::getForeignAddress();}
 
-    unsigned short getPeerPort() const {return peerPort;}
+    unsigned short getForeignPort() const {return UdpSocket::getForeignPort();}
 
     void receiveMessage() throw(SocketException);
 
@@ -140,9 +148,6 @@ private:
     void sendSinglePacket(formatPacket fpk, bool &successCheck) throw(SocketException);
 
 protected:
-    condition_variable completeCond;    // variable indicate complete
-    mutex completeMutex;
-
     /**
      *  Resend timeout duration.
      *  Integer represent, take milliseconds as unit.
@@ -181,13 +186,6 @@ protected:
      *  - Client side: Used for waiting ack and resending.
      */
     vector<mutex> packetsMutex;
-
-    /**
-     * Peer address and peer port.
-     *  when the socket serve as a server, empty indicate any where
-     */
-    string peerAddress;
-    unsigned short peerPort = 0;
 };
 
 

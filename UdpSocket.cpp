@@ -207,14 +207,12 @@ throw(SocketException) {
 int CommunicatingSocket::recv(void *buffer, int bufferLen)
 throw(SocketException) {
     int rtn;
-    if ((rtn = ::recv(sockDesc, (raw_type *) buffer, bufferLen, 0)) < 0) {
-        throw SocketException("Received failed (recv())", true);
-    }
-
+    // EDIT: by @shesl-meow, passing exception processing to upper layer
+    rtn = ::recv(sockDesc, (raw_type *) buffer, bufferLen, 0);
     return rtn;
 }
 
-string CommunicatingSocket::getForeignAddress()
+string CommunicatingSocket::getForeignAddress() const
 throw(SocketException) {
     sockaddr_in addr;
     unsigned int addr_len = sizeof(addr);
@@ -225,7 +223,7 @@ throw(SocketException) {
     return inet_ntoa(addr.sin_addr);
 }
 
-unsigned short CommunicatingSocket::getForeignPort() throw(SocketException) {
+unsigned short CommunicatingSocket::getForeignPort() const throw(SocketException) {
     sockaddr_in addr;
     unsigned int addr_len = sizeof(addr);
 
@@ -298,10 +296,9 @@ int UdpSocket::recvFrom(void *buffer, int bufferLen, string &sourceAddress,
     sockaddr_in clntAddr;
     socklen_t addrLen = sizeof(clntAddr);
     int rtn;
-    if ((rtn = recvfrom(sockDesc, (raw_type *) buffer, bufferLen, 0,
-                        (sockaddr *) &clntAddr, (socklen_t *) &addrLen)) < 0) {
-        throw SocketException("Receive failed (recvfrom())", true);
-    }
+    // EDIT: by @shesl-meow, passing exception processing to upper layer
+    rtn = recvfrom(sockDesc, (raw_type *) buffer, bufferLen, 0,
+                        (sockaddr *) &clntAddr, (socklen_t *) &addrLen);
     sourceAddress = inet_ntoa(clntAddr.sin_addr);
     sourcePort = ntohs(clntAddr.sin_port);
 
