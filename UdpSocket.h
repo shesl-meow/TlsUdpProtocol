@@ -173,14 +173,14 @@ public:
      *   @return foreign address
      *   @exception SocketException thrown if unable to fetch foreign address
      */
-    string getForeignAddress() const throw(SocketException);
+    virtual string getForeignAddress() const throw(SocketException);
 
     /**
      *   Get the foreign port.  Call connect() before calling recv()
      *   @return foreign port
      *   @exception SocketException thrown if unable to fetch foreign port
      */
-    unsigned short getForeignPort() const throw(SocketException);
+    virtual unsigned short getForeignPort() const throw(SocketException);
 
 protected:
     CommunicatingSocket(int type, int protocol) throw(SocketException);

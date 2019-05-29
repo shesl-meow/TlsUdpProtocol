@@ -1,6 +1,9 @@
 {
   "timeoutInterval": 1000,
-  "packetSize": 3,
+  "packetSize": 1024,
   "retryTimes": 3,
-  "bufferSize": 255
+  "bufferSize": 255,
+  "publicPrimeG": "263",
+  "publicPrimeP": "0",
+  "primeBitsLength": 1024
 }

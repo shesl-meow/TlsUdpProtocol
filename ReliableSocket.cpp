@@ -35,14 +35,14 @@ ReliableSocket::formatPacket ReliableSocket::parsePacket(char *packet) {
     fpacket.seqNumber = *((unsigned short *)packet + 1);
     fpacket.flag = *((unsigned short *)packet + 2);
     if (fpacket.bodySize > 0) {
-        fpacket.packetBody = new char(fpacket.bodySize - 6);
+        fpacket.packetBody = new char [fpacket.bodySize - 6];
         memcpy(fpacket.packetBody, packet + 6, fpacket.bodySize);
     } else fpacket.packetBody = nullptr;
     return fpacket;
 }
 
 char* ReliableSocket::deparsePacket(ReliableSocket::formatPacket fpacket) {
-    char *packet = new char(6 + fpacket.bodySize);
+    char *packet = new char [6 + fpacket.bodySize];
     *((unsigned short *)packet) = fpacket.bodySize;
     *((unsigned short *)packet + 1) = fpacket.seqNumber;
     *((unsigned short *)packet + 2) = fpacket.flag;
@@ -61,7 +61,7 @@ ReliableSocket::formatPacket ReliableSocket::getLenPacket() const {
     lpacket.flag = LEN_FLAG;
     string mLength = to_string(messageLength);
     lpacket.bodySize = mLength.size();
-    lpacket.packetBody = new char(lpacket.bodySize);
+    lpacket.packetBody = new char [lpacket.bodySize];
     memcpy(lpacket.packetBody, mLength.c_str(), mLength.size());
     return lpacket;
 }
@@ -90,11 +90,11 @@ const throw(SocketException){
     mpacket.flag = MSG_FLAG;
     if( (seqNumber + 1) * packetSize + (messageLength % packetSize) > messageLength) {
         mpacket.bodySize = messageLength % packetSize;
-        mpacket.packetBody = new char (mpacket.bodySize);
+        mpacket.packetBody = new char [mpacket.bodySize];
         memcpy(mpacket.packetBody, packetsBuffer.at(seqNumber), mpacket.bodySize);
     } else {
         mpacket.bodySize = packetSize;
-        mpacket.packetBody = new char(mpacket.bodySize);
+        mpacket.packetBody = new char [mpacket.bodySize];
         memcpy(mpacket.packetBody, packetsBuffer.at(seqNumber), mpacket.bodySize);
     }
     return mpacket;
@@ -125,11 +125,12 @@ ReliableSocket::~ReliableSocket() {
     for(auto packet: packetsBuffer) delete []packet;
 }
 
-void ReliableSocket::loadConfig(const char *configPath) {
+Json::Value ReliableSocket::loadConfig(const char *configPath) throw(SocketException) {
     // TODO: Load all chars into string from file.
     ifstream configFile;
     configFile.open(configPath);
 
+    Json::Value configValue;
     if (configFile.is_open()) {
         string configStr((istreambuf_iterator<char>(configFile)), istreambuf_iterator<char>());
 
@@ -138,22 +139,20 @@ void ReliableSocket::loadConfig(const char *configPath) {
          */
         Json::CharReaderBuilder configBuilder;
         Json::CharReader *configReader = configBuilder.newCharReader();
-        Json::Value configValue;
 
         string parsingErrors;
-        if (!(configReader->parse(configStr.c_str(), configStr.c_str() + configStr.size(),
-                &configValue, &parsingErrors))) {
-            cerr << "Parsing " << configPath << " error: " << parsingErrors << endl;
-        } else {
-            timeoutInterval = chrono::milliseconds(configValue["timeoutInterval"].asInt());
-            packetSize = configValue["packetSize"].asInt();
-            bufferSize = configValue["bufferSize"].asInt();
-            retryTimes = configValue["retryTimes"].asInt();
+        if ( !(configReader->parse(configStr.c_str(),
+                configStr.c_str() + configStr.size(),
+                &configValue, &parsingErrors)) ) {
+            throw SocketException("Parsing json file" + string(configPath) + " errors " + parsingErrors);
         }
+        timeoutInterval = chrono::milliseconds(configValue["timeoutInterval"].asInt());
+        packetSize = configValue["packetSize"].asInt();
+        bufferSize = configValue["bufferSize"].asInt();
+        retryTimes = configValue["retryTimes"].asInt();
         configFile.close();
-    } else {
-        cerr << "Can't open config file " << configPath << endl;
-    }
+    } else throw SocketException("Can't open config file.", false);
+
     if (timeoutInterval == 0ms) timeoutInterval = 1s;
     if (packetSize == 0) packetSize = 1024;
     if (bufferSize == 0) bufferSize = 255;
@@ -172,31 +171,35 @@ void ReliableSocket::loadConfig(const char *configPath) {
 #ifdef RELIABLE_DEBUG
     cout << "Set timeout: " << timeoutInterval.count() << "ms" << endl;
 #endif
+    return configValue;
 }
 
-void ReliableSocket::setPackets(const string &messageBody) throw(SocketException) {
-    if (messageBody.size() >= UINT32_MAX) throw SocketException("Message to long", false);
-
+void ReliableSocket::setPackets(const char *message, unsigned int mLength) throw(SocketException) {
     if (messageLength != 0) {
         for(auto packet: packetsBuffer) delete []packet;
         packetsBuffer.clear(); packetsConfirm.clear();
         messageLength = 0;
     }
 
-    messageLength = messageBody.size();
-    for(int i = 0; i < messageLength / packetSize; ++i){
-        char *packet = new char[packetSize];
-        memcpy(packet, messageBody.substr(i * packetSize, packetSize).c_str(), packetSize);
+    messageLength = mLength; int i = 0;
+    for(i = 0; i < messageLength / packetSize; ++i){
+        char *packet = new char [packetSize];
+        memcpy(packet, message + i*packetSize, packetSize);
         packetsBuffer.push_back(packet); packetsConfirm.push_back(false);
     }
     if(messageLength % packetSize != 0){
         char *packet = new char[packetSize];
-        memcpy(packet, messageBody.substr(messageLength - messageLength % packetSize).c_str(), packetSize);
+        memcpy(packet, message + i*packetSize, messageLength % packetSize);
         packetsBuffer.push_back(packet); packetsConfirm.push_back(false);
     }
 #ifdef RELIABLE_DEBUG
-    cout << "Set packet: " << messageBody << endl;
+    cout << "Set packet: " << string(message, mLength) << endl;
 #endif
+}
+
+void ReliableSocket::setPackets(const string &messageBody) throw(SocketException) {
+    if (messageBody.size() >= UINT32_MAX) throw SocketException("Message to long", false);
+    this->setPackets(messageBody.c_str(), messageBody.size());
 }
 
 void ReliableSocket::setPackets(unsigned int mLength) throw(SocketException) {
@@ -208,7 +211,7 @@ void ReliableSocket::setPackets(unsigned int mLength) throw(SocketException) {
 
     messageLength = mLength;
     for(int i = 0; i < messageLength / packetSize; ++i){
-        char *packet = new char (packetSize);
+        char *packet = new char [packetSize];
         packetsBuffer.push_back(packet); packetsConfirm.push_back(false);
     }
     if(messageLength % packetSize != 0){
@@ -244,8 +247,8 @@ throw(SocketException) {
 #endif
 }
 
-void ReliableSocket::startListen() {
-    char *receiveBuffer = new char(bufferSize);
+void ReliableSocket::startListen() throw(SocketException) {
+    char *receiveBuffer = new char [bufferSize];
     unsigned int receiveSize = 0;
     string sourceAddress;
     unsigned short sourcePort;
@@ -262,11 +265,11 @@ void ReliableSocket::startListen() {
             continue;
         }
         auto fpacket = parsePacket(receiveBuffer);
-        delete fpacket.packetBody;
+        delete []fpacket.packetBody;
         if ( (fpacket.flag ^ HAN_FLAG) == 0u) break;
     }
     connect(sourceAddress, sourcePort);
-    delete receiveBuffer;
+    delete []receiveBuffer;
 #ifdef RELIABLE_DEBUG
     cout << endl << "Connect to " << getForeignAddress() << ":" << getForeignPort() << endl;
 #endif
@@ -275,8 +278,8 @@ void ReliableSocket::startListen() {
     auto hpacket = getHanPacket();
     char *packet = deparsePacket(hpacket);
     this->send(packet, hpacket.bodySize + 6);
-    delete packet;
-    delete hpacket.packetBody;
+    delete []packet;
+    delete []hpacket.packetBody;
 }
 
 void ReliableSocket::connectForeignAddressPort(const string &address, unsigned short port)
@@ -288,28 +291,29 @@ throw(SocketException) {
     auto t = thread([this, hpacket, &connectSuccess]{this->sendSinglePacket(hpacket, connectSuccess);});
 
     // TODO: receive first handshake packet ack.
-    char *receiveBuffer = new char(bufferSize);
+    char *receiveBuffer = new char [bufferSize];
     unsigned int receiveSize;
-    for(unsigned int i = 0; i < retryTimes; i++) {
+    while (true) {
         receiveSize = this->recv(receiveBuffer, bufferSize);
         if (receiveSize == -1) continue;
         auto fpacket = parsePacket(receiveBuffer);
-        delete fpacket.packetBody;
-        if ( ((fpacket.flag ^ HAN_FLAG) == 0u) && fpacket.bodySize == 0u ) break;
-        else {
-#ifdef RELIABLE_DEBUG
+        delete []fpacket.packetBody;
+        if ( ((fpacket.flag ^ HAN_FLAG) == 0u) && fpacket.bodySize == 0u ){
+            connectSuccess = true;
+            break;
+        } else {
+        #ifdef RELIABLE_DEBUG
             cout << "[Receiving Handshake ACK] Drop packets: " << string(fpacket.packetBody, fpacket.bodySize) << endl;
-#endif
+        #endif
         }
     }
-    connectSuccess = true;
     t.join();
-    delete hpacket.packetBody;
+    delete []hpacket.packetBody;
 }
 
 void ReliableSocket::receiveMessage() throw(SocketException) {
     // TODO: STEP1 -- receive length packet
-    char *receiveBuffer = new char(bufferSize);
+    char *receiveBuffer = new char [bufferSize];
     int receiveSize = 0;
     while (true) {
         receiveSize = recv(receiveBuffer, bufferSize);
@@ -319,7 +323,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
         #ifdef RELIABLE_DEBUG
             cout << "[Receiving Length] Drop packets: " << string(fpacket.packetBody, fpacket.bodySize) << endl;
         #endif
-            delete fpacket.packetBody;
+            delete []fpacket.packetBody;
             continue;
         } else {
             char *endBody = fpacket.packetBody + fpacket.bodySize;
@@ -328,7 +332,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
             cout << "[Receiving Length] Ready receive length=" << mLength << endl;
         #endif
             setPackets(mLength);
-            delete fpacket.packetBody; break;
+            delete []fpacket.packetBody; break;
         }
     }
 
@@ -355,7 +359,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
             auto mapacket = getMsgAckPacket(fpacket.seqNumber);
             auto ackpacket = deparsePacket(mapacket);
             this->send(ackpacket, mapacket.bodySize + 6);
-            delete ackpacket; delete mapacket.packetBody;
+            delete []ackpacket; delete []mapacket.packetBody;
         } else {
         #ifdef RELIABLE_DEBUG
             cout << "[Receiving Packets] Drop packet " <<
@@ -382,7 +386,7 @@ void ReliableSocket::sendMessage() throw(SocketException) {
     thread t ([this, lpacket, &lenSuccess]{this->sendSinglePacket(lpacket, lenSuccess);});
 
     // TODO: STEP2 -- waiting for handshake ack.
-    char *receiveBuffer = new char(bufferSize);
+    char *receiveBuffer = new char [bufferSize];
     int receiveSize = 0;
     while (true) {
         receiveSize = recv(receiveBuffer, bufferSize);
@@ -393,15 +397,15 @@ void ReliableSocket::sendMessage() throw(SocketException) {
             cout << "[Receiving Length ACK] Received!" << endl;
         #endif
             lenSuccess = true;
-            delete fpacket.packetBody; break;
+            delete []fpacket.packetBody; break;
         } else {
         #ifdef RELIABLE_DEBUG
             cout << "[Receiving Length ACK] Drop packet " << string(fpacket.packetBody, fpacket.bodySize) << endl;
         #endif
-            delete fpacket.packetBody;
+            delete []fpacket.packetBody;
         }
     }
-    delete lpacket.packetBody;
+    delete []lpacket.packetBody;
 
     // TODO: STEP3 -- sending all packets
     vector<thread> senderThreads;
@@ -415,7 +419,7 @@ void ReliableSocket::sendMessage() throw(SocketException) {
         receiveSize = recv(receiveBuffer, bufferSize);
         if (receiveSize < 0) continue;
         auto fpacket = parsePacket(receiveBuffer);
-        delete fpacket.packetBody;
+        delete []fpacket.packetBody;
         if ( (fpacket.flag ^ (MSG_FLAG | ACK_FLAG)) == 0u) {
         #ifdef RELIABLE_DEBUG
             cout << "[Receiving Packets ACK] received [" << fpacket.seqNumber << "]" << endl;
@@ -450,10 +454,10 @@ void ReliableSocket::sendSinglePacket(unsigned short seqNumber) throw(SocketExce
     #endif
         this_thread::sleep_for(timeoutInterval);
         if (packetsConfirm.at(seqNumber)){
-            delete packet; delete fpk.packetBody; return;
+            delete []packet; delete []fpk.packetBody; return;
         }
     }
-    delete packet; delete fpk.packetBody;
+    delete []packet; delete []fpk.packetBody;
     throw SocketException("Lose connection. Seq: " + to_string(fpk.seqNumber), true);
 }
 
@@ -467,8 +471,8 @@ throw(SocketException) {
             << ". Try times [" << i+1 << "]" << endl;
     #endif
         this_thread::sleep_for(timeoutInterval);
-        if (successCheck) {delete packet; return;}
+        if (successCheck) {delete []packet; return;}
     }
-    delete packet;
+    delete []packet;
     throw SocketException("Lose connection. Flag: " + to_string(fpk.flag), true);
 }

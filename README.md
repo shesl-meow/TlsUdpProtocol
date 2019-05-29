@@ -7,6 +7,10 @@
 以下为编译本项目的一些说明:
 
 1. 本项目引用了 `jsoncpp` 这个项目，在 `Linux` 环境下，安装 `jsoncpp`，编译时使用命令行参数 `-ljsoncpp`. 参考：<https://www.codeproject.com/Articles/1102603/Accessing-JSON-Data-with-Cplusplus>
+2. 本项目的大整数计算使用了 `GNU` 的 `gmp` 项目，在 `Linux` 环境下，编译时使用命令行参数 `-lgmp`. 参考：
+   1. 手册：<https://gmplib.org/manual/>
+   2. 接口：<https://gmplib.org/manual/C_002b_002b-Class-Interface.html#C_002b_002b-Class-Interface>
+   3. 数论接口：<https://gmplib.org/manual/Number-Theoretic-Functions.html>
 
 ## 协议简述
 
@@ -39,15 +43,25 @@
 
 ### `SecureSocket`
 
-安全层建立连接:
+实现在传输层与应用层中，实现加密传输（类比 `TLS` 协议），该套接字继承于 `ReliableSocket`，重写了 `connectForeignAddressPort()` 与 `startListen()` 这两个握手函数，`sendMessage()` 与 `receiveMessage()` 这两个传输信息的函数。
+
+`Public` 信息（如果密钥长度设置为 1024 位的话）交换格式如下：
+
+|     1-2 bytes     |  3-4 bytes  | 4-132 bytes (1024 bits) | 132-260 bytes (1024 bits) |
+| :---------------: | :---------: | :---------------------: | :-----------------------: |
+| 请求体大小 (2048) | 16 个标志位 |       公共素数 G        |        公共素数 P         |
+
+
 
 ```mermaid
-sequenceDiagram
+graph TB
 
-participant 服务端
-participant 客户端
+subgraph 服务端
 
-客户端->>服务端: 
+end
+
+subgraph 客户端
+end
 ```
 
 ## 项目结构 可执行文件
