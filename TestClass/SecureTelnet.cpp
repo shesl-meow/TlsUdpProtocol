@@ -15,6 +15,11 @@ int main(int argc, char *argv[]){
     unsigned short serverPort = atoi(argv[2]);     // First arg:  local port
     SecureSocket ss("/media/data/program/git/TlsUdpProtocol/config.json");
     ss.connectForeignAddressPort(serverAddress, serverPort);
-
+    while (true) {
+        string message;
+        cout << "> "; cin >> message;
+        ss.setPackets(message);
+        ss.sendMessage();
+    }
     return 0;
 }

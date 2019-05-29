@@ -3,7 +3,9 @@
   "packetSize": 128,
   "retryTimes": 3,
   "bufferSize": 150,
+
   "publicPrimeG": "263",
   "publicPrimeP": "0",
-  "primeBitsLength": 1024
+  "primeBitsLength": 1024,
+  "aesKeyBitsLength": 256
 }

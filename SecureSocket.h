@@ -78,11 +78,35 @@ public:
      *   publicPrimeP, publicPrimeG: if not prime - raise error, if not provided p=random(1024) g=65537
      * @param configPath configuration file path.
      */
-     Json::Value loadConfig(const char *configPath) throw(SocketException) override;
+    Json::Value loadConfig(const char *configPath) throw(SocketException) override;
 
-     void startListen() throw(SocketException) override;
+    /**
+     * Waiting for the first handshake packets. Server side socket should call this function first.
+     * Override parent startListen for exchanging key.
+     */
+    void startListen() throw(SocketException) override;
 
-    void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException) override ;
+    /**
+     * Client side socket should call this function bind its peer address and port,
+     *     and send the first handshake packet.
+     * Override parent startListen for exchanging key.
+     * @param address Foreign peer address
+     * @param port Foreign peer port
+     */
+    void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException) override;
+
+    /**
+      * Major function of this socket, reliably send message to peer side.
+      * program will choice exchangeKey little endian arrangement first bits as AES key.
+      */
+    void sendMessage() throw(SocketException) override;
+
+    /**
+     * Major function of this socket, reliably send message to peer side.
+     * program will choice exchangeKey little endian arrangement first bits as AES key.
+     */
+    void receiveMessage() throw(SocketException) override;
+
 
 protected:
     /**
@@ -108,6 +132,12 @@ protected:
      * Cut the last 256 bits if result is far more than that.
      */
     mpz_t exchangedKey;
+
+    /**
+     * AES key bits length, choices are 128, 192, 256,
+     *  program will choice exchangeKey little endian arrangement first bits as AES key.
+     */
+    unsigned int aesKeyBitsLength = 256;
 };
 
 

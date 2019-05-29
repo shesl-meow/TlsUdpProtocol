@@ -9,7 +9,7 @@ alt DH密钥交换
     Server-->>Client: Private Message [g^Xs mod p]
     Client->>Client: Get shared key
 end
-alt DES加密传输
+alt AES加密传输
 	Server-->>Client: sendMessage() encrypt
 	Client->>Client: receiveMessage() decrypt
 	Client-->>Server: sendMessage() encrypt

@@ -156,8 +156,14 @@ public:
       */
      virtual void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException);
 
+     /**
+      * Major function of this socket, reliably receive message from peer side
+      */
      virtual void receiveMessage() throw(SocketException);
 
+     /**
+      * Major function of this socket, reliably send message to peer side.
+      */
      virtual void sendMessage() throw(SocketException);
 
 private:

@@ -13,7 +13,7 @@ add_executable(reliabletelnet TestClass/ReliableTelnet.cpp ReliableSocket.cpp Ud
 target_link_libraries(reliabletelnet jsoncpp pthread)
 
 add_executable(secureserver TestClass/SecureServer.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
-target_link_libraries(secureserver jsoncpp pthread gmp gmpxx)
+target_link_libraries(secureserver jsoncpp pthread gmp gmpxx crypto)
 
 add_executable(securetelnet TestClass/SecureTelnet.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
-target_link_libraries(securetelnet jsoncpp pthread gmp gmpxx)
+target_link_libraries(securetelnet jsoncpp pthread gmp gmpxx crypto)
