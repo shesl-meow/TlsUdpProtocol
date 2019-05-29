@@ -22,9 +22,9 @@ void SecureSocket::getPublicPacket(char *destBuffer, unsigned int destSize) cons
 
     size_t writenSize;
     mpz_export(destBuffer + 4, &writenSize, -1, sizeof(char), -1, 0, publicPrimeG);
-    assert(writenSize <= primeBitsLength);
+    assert(writenSize <= primeBitsLength/8);
     mpz_export(destBuffer + (primeBitsLength/8) + 4, &writenSize, -1, sizeof(char), -1, 0, publicPrimeP);
-    assert(writenSize <= primeBitsLength);
+    assert(writenSize <= primeBitsLength/8);
 }
 
 void SecureSocket::parsePublicPacket(const char *srcBuffer) throw(SocketException){
@@ -37,8 +37,8 @@ void SecureSocket::parsePublicPacket(const char *srcBuffer) throw(SocketExceptio
         throw SocketException(ss.str());
     }
 
-    mpz_import(publicPrimeG, primeBitsLength, -1, sizeof(char), -1, 0, srcBuffer + 4);
-    mpz_import(publicPrimeP, primeBitsLength, -1, sizeof(char), -1, 0, srcBuffer + (primeBitsLength/8) + 4);
+    mpz_import(publicPrimeG, primeBitsLength/8, -1, sizeof(char), -1, 0, srcBuffer + 4);
+    mpz_import(publicPrimeP, primeBitsLength/8, -1, sizeof(char), -1, 0, srcBuffer + (primeBitsLength/8) + 4);
 #ifdef SECURE_DEBUG
     cout << "[Sync server prime] G:" << publicPrimeG << endl;
     cout << "[Sync server prime] P:" << publicPrimeP << endl;
@@ -55,7 +55,7 @@ void SecureSocket::getPrivatePacket(char *destBuffer, unsigned int destSize) con
     mpz_powm(gxp, publicPrimeG, privateXNumber, publicPrimeP);
     size_t writenSize;
     mpz_export(destBuffer+4, &writenSize, -1, sizeof(char), -1, 0, gxp);
-    assert(writenSize <= primeBitsLength);
+    assert(writenSize <= primeBitsLength/8);
     mpz_clear(gxp);
 }
 
@@ -63,14 +63,15 @@ void SecureSocket::parsePrivatePacket(const char *srcBuffer) throw(SocketExcepti
     if ( (*((unsigned short*)srcBuffer + 1) ^ SEC_FLAG) != 0u)
         throw SocketException("Try to parse a non-private packet.");
     unsigned short bodySize = *((unsigned short*)srcBuffer);
-    if (bodySize != primeBitsLength){
+    if (bodySize*8 != primeBitsLength){
         stringstream ss;
-        ss << "Server primeBitsLength=" << bodySize << "; While client=" << primeBitsLength;
+        ss << "Server primeBitsLength=" << 8*bodySize
+            << "; While client=" << primeBitsLength;
         throw SocketException(ss.str());
     }
 
     mpz_t gyp; mpz_init(gyp);
-    mpz_import(gyp, primeBitsLength, -1, sizeof(char), -1, 0, srcBuffer+4);
+    mpz_import(gyp, primeBitsLength/8, -1, sizeof(char), -1, 0, srcBuffer+4);
     mpz_powm(exchangedKey, gyp, privateXNumber, publicPrimeP);
     mpz_clear(gyp);
 #ifdef SECURE_DEBUG
@@ -150,8 +151,8 @@ void SecureSocket::startListen() throw(SocketException){
     delete []pubpacket;
     // TODO: STEP2 -- Receive private message from client side.
     ReliableSocket::receiveMessage();
-    char *prvmessage = new char [messageLength];
-    this->readMessage(prvmessage, messageLength);
+    char *prvmessage = new char [messageLength + 1];
+    this->readMessage(prvmessage, messageLength + 1);
     parsePrivatePacket(prvmessage);
     delete []prvmessage;
     // TODO: STEP3 -- Send private back
@@ -167,8 +168,8 @@ throw(SocketException) {
     ReliableSocket::connectForeignAddressPort(address, port);
     // TODO: STEP1 -- Receive public message from peer side.
     ReliableSocket::receiveMessage();
-    char *pubmessage = new char [messageLength];
-    this->readMessage(pubmessage, messageLength);
+    char *pubmessage = new char [messageLength + 1];
+    this->readMessage(pubmessage, messageLength + 1);
     parsePublicPacket(pubmessage);
     delete []pubmessage;
     // TODO: STEP2 -- Send private message of client side.
@@ -179,8 +180,8 @@ throw(SocketException) {
     delete []prvpacket;
     // TODO: STEP3 -- Receive private packet from server side.
     ReliableSocket::receiveMessage();
-    char *prvmessage = new char [messageLength];
-    this->readMessage(prvmessage, messageLength);
+    char *prvmessage = new char [messageLength + 1];
+    this->readMessage(prvmessage, messageLength + 1);
     parsePrivatePacket(prvmessage);
     delete []prvmessage;
 }

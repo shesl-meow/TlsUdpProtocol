@@ -25,7 +25,7 @@
 #define ACK_FLAG 0x10u
 #define MSG_FLAG 0x8u
 
-#define RELIABLE_DEBUG true
+//#define RELIABLE_DEBUG true
 
 // ReliableSocket Code
 
@@ -35,7 +35,7 @@ ReliableSocket::formatPacket ReliableSocket::parsePacket(char *packet) {
     fpacket.seqNumber = *((unsigned short *)packet + 1);
     fpacket.flag = *((unsigned short *)packet + 2);
     if (fpacket.bodySize > 0) {
-        fpacket.packetBody = new char [fpacket.bodySize - 6];
+        fpacket.packetBody = new char [fpacket.bodySize];
         memcpy(fpacket.packetBody, packet + 6, fpacket.bodySize);
     } else fpacket.packetBody = nullptr;
     return fpacket;
@@ -155,9 +155,11 @@ Json::Value ReliableSocket::loadConfig(const char *configPath) throw(SocketExcep
 
     if (timeoutInterval == 0ms) timeoutInterval = 1s;
     if (packetSize == 0) packetSize = 1024;
-    if (bufferSize == 0) bufferSize = 255;
+    if (bufferSize == 0) bufferSize = 1200;
     if (retryTimes == 0) retryTimes = 3;
 
+    if (packetSize + 6 > bufferSize)
+        throw SocketException("Your received bufferSize should be greater than packetSize.", false);
     // TODO: apply timout interval config
 #ifdef WIN32
     DWORD timeout = timeoutInterval.count();
@@ -227,7 +229,7 @@ unsigned int ReliableSocket::getMessageLength() const {return messageLength;}
 
 void ReliableSocket::readMessage(char *destBuffer, int destBufferSize) const throw(SocketException) {
     if (destBufferSize <= messageLength) {
-        throw SocketException("Please passed a buffer with more space.");
+        throw SocketException("Please passed a buffer with more space. [Consider trailing \\0]");
     }
     for(int i = 0; i < messageLength / packetSize; ++i) {
         memcpy(destBuffer + i*packetSize, packetsBuffer.at(i), packetSize);
@@ -250,8 +252,8 @@ throw(SocketException) {
 void ReliableSocket::startListen() throw(SocketException) {
     char *receiveBuffer = new char [bufferSize];
     unsigned int receiveSize = 0;
-    string sourceAddress;
-    unsigned short sourcePort;
+    string sourceAddress; unsigned short sourcePort;
+
 #ifdef RELIABLE_DEBUG
     cout << "Start listening." << flush;
 #endif
@@ -259,9 +261,9 @@ void ReliableSocket::startListen() throw(SocketException) {
     while (true) {
         receiveSize = recvFrom(receiveBuffer, bufferSize, sourceAddress, sourcePort);
         if (receiveSize == -1){
-#ifdef RELIABLE_DEBUG
+        #ifdef RELIABLE_DEBUG
             cout << "." << flush;
-#endif
+        #endif
             continue;
         }
         auto fpacket = parsePacket(receiveBuffer);
@@ -319,7 +321,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
         receiveSize = recv(receiveBuffer, bufferSize);
         if (receiveSize < 0) continue;
         auto fpacket = parsePacket(receiveBuffer);
-        if ( (fpacket.flag ^ LEN_FLAG) != 0u ){
+        if ( (fpacket.flag ^ LEN_FLAG) != 0u ) {
         #ifdef RELIABLE_DEBUG
             cout << "[Receiving Length] Drop packets: " << string(fpacket.packetBody, fpacket.bodySize) << endl;
         #endif
@@ -339,7 +341,9 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
     // TODO: STEP2 -- sending length ack packet back
     auto hpacket = getLenAckPacket();
     bool lenAckSuccess = false;
-    thread t ([this, hpacket, &lenAckSuccess]{this->sendSinglePacket(hpacket, lenAckSuccess);});
+    thread t ([this, hpacket, &lenAckSuccess]{
+        this->sendSinglePacket(hpacket, lenAckSuccess);
+    });
 
     // TODO: STEP3 -- waiting for all packets and sending acks
     while (true) {
@@ -394,13 +398,13 @@ void ReliableSocket::sendMessage() throw(SocketException) {
         auto fpacket = parsePacket(receiveBuffer);
         if ((fpacket.flag ^ (LEN_FLAG | ACK_FLAG)) == 0u ){
         #ifdef RELIABLE_DEBUG
-            cout << "[Receiving Length ACK] Received!" << endl;
+            cout << "[Receiving LEN ACK] Received!" << endl;
         #endif
             lenSuccess = true;
             delete []fpacket.packetBody; break;
         } else {
         #ifdef RELIABLE_DEBUG
-            cout << "[Receiving Length ACK] Drop packet " << string(fpacket.packetBody, fpacket.bodySize) << endl;
+            cout << "[Receiving LEN ACK] Drop packet " << string(fpacket.packetBody, fpacket.bodySize) << endl;
         #endif
             delete []fpacket.packetBody;
         }
@@ -422,7 +426,7 @@ void ReliableSocket::sendMessage() throw(SocketException) {
         delete []fpacket.packetBody;
         if ( (fpacket.flag ^ (MSG_FLAG | ACK_FLAG)) == 0u) {
         #ifdef RELIABLE_DEBUG
-            cout << "[Receiving Packets ACK] received [" << fpacket.seqNumber << "]" << endl;
+            cout << "[Receiving Packets ACK] Received! [" << fpacket.seqNumber << "]" << endl;
         #endif
             packetsConfirm.at(fpacket.seqNumber) = true;
         } else {
@@ -449,8 +453,8 @@ void ReliableSocket::sendSinglePacket(unsigned short seqNumber) throw(SocketExce
     for (unsigned int i = 0; i < retryTimes; ++i) {
         this->send(packet, fpk.bodySize + 6);
     #ifdef RELIABLE_DEBUG
-        cout << "Send packet: " << string(fpk.packetBody, fpk.bodySize)
-             << ". Try times [" << i+1 << "]" << endl;
+        cout << "[Sending message packet]: [" << seqNumber << "] "
+            << string(fpk.packetBody, fpk.bodySize) << " [TIMES:" << i+1 << "]" << endl;
     #endif
         this_thread::sleep_for(timeoutInterval);
         if (packetsConfirm.at(seqNumber)){
@@ -458,21 +462,29 @@ void ReliableSocket::sendSinglePacket(unsigned short seqNumber) throw(SocketExce
         }
     }
     delete []packet; delete []fpk.packetBody;
-    throw SocketException("Lose connection. Seq: " + to_string(fpk.seqNumber), true);
+    throw SocketException("Lose connection. Message Seq: " + to_string(fpk.seqNumber), true);
 }
 
 void ReliableSocket::sendSinglePacket(ReliableSocket::formatPacket fpk, bool &successCheck)
 throw(SocketException) {
+    stringstream ss;
+    if ((fpk.flag & HAN_FLAG) != 0u) ss << "HAN ";
+    if ((fpk.flag & LEN_FLAG) != 0u) ss << "LEN ";
+    if ((fpk.flag & ACK_FLAG) != 0u) ss << "ACK ";
+    if ((fpk.flag & MSG_FLAG) != 0u) ss << "MSG ";
+    if ((fpk.flag & FIN_FLAG) != 0u) ss << "FIN ";
+
     char *packet = deparsePacket(fpk);
     for (unsigned int i = 0; i < retryTimes; ++i) {
         send(packet, fpk.bodySize + 6);
     #ifdef RELIABLE_DEBUG
-        cout << "Send packet: " << string(fpk.packetBody, fpk.bodySize)
-            << ". Try times [" << i+1 << "]" << endl;
+        cout << "[Send "<< ss.str() << "packet]: "
+            << string(fpk.packetBody, fpk.bodySize) << " [" << i+1 << "] " << endl;
     #endif
         this_thread::sleep_for(timeoutInterval);
         if (successCheck) {delete []packet; return;}
     }
     delete []packet;
-    throw SocketException("Lose connection. Flag: " + to_string(fpk.flag), true);
+
+    throw SocketException("Lose connection. Sender flag: " + ss.str(), true);
 }
