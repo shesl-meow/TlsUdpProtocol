@@ -57,18 +57,7 @@
 | :---------------: | :---------: | :----------------------------: |
 | 请求体大小 (1024) | 16 个标志位 | 生成共享信息：$$g^X \pmod{p}$$ |
 
-
-
-```mermaid
-graph TB
-
-subgraph 服务端
-
-end
-
-subgraph 客户端
-end
-```
+![SecureSocket](./SecureSocket.svg)
 
 ## 项目结构 可执行文件
 

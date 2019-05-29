@@ -1,0 +1,17 @@
+sequenceDiagram
+
+participant Server; participant Client;
+
+alt DH密钥交换
+    Server-->>Client: Public Message [prime g,p]
+    Client-->>Server: Private Message [g^Xc mod p]
+    Server->>Server: Get shared key
+    Server-->>Client: Private Message [g^Xs mod p]
+    Client->>Client: Get shared key
+end
+alt DES加密传输
+	Server-->>Client: sendMessage() encrypt
+	Client->>Client: receiveMessage() decrypt
+	Client-->>Server: sendMessage() encrypt
+	Server->>Server: receiveMessage() decrypt
+end
