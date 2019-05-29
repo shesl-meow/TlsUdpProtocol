@@ -52,17 +52,17 @@ private:
      */
     formatPacket getHanPacket() const;
     formatPacket getLenPacket() const;
-    formatPacket getMsgAckPacket(unsigned short seqNumber) const throw(SocketException);
-    formatPacket getLenAckPacket() const throw(SocketException);
-    formatPacket getMsgPacket(unsigned short seqNumber) const throw(SocketException);
+    formatPacket getMsgAckPacket(unsigned short seqNumber) const;
+    formatPacket getLenAckPacket() const;
+    formatPacket getMsgPacket(unsigned short seqNumber) const;
     formatPacket getFinPacket(bool isMsgFin = true) const;
 
 protected:
     /**
      * These construct functions can only be called from children class
      */
-    ReliableSocket() throw(SocketException): UdpSocket(){}
-    explicit ReliableSocket(unsigned short localPort) throw(SocketException) : UdpSocket(localPort) {}
+    ReliableSocket(): UdpSocket(){}
+    explicit ReliableSocket(unsigned short localPort) : UdpSocket(localPort) {}
     ReliableSocket(const string &localAddress, unsigned short localPort) : UdpSocket(localAddress, localPort) {}
 
 public:
@@ -70,14 +70,14 @@ public:
      *   Construct a reliable UDP socket
      *   @exception SocketException thrown if unable to create reliable UDP socket
      */
-    explicit ReliableSocket(const char *configPath) throw(SocketException);
+    explicit ReliableSocket(const char *configPath);
 
     /**
      *   Construct a reliable UDP socket with the given local port
      *   @param localPort local port
      *   @exception SocketException thrown if unable to create reliable UDP socket
      */
-    ReliableSocket(unsigned short localPort, const char *configPath) throw(SocketException);
+    ReliableSocket(unsigned short localPort, const char *configPath);
 
     /**
      *   Construct a reliable UDP socket with the given local port and address
@@ -85,7 +85,7 @@ public:
      *   @param localPort local port
      *   @exception SocketException thrown if unable to create reliable UDP socket
      */
-    ReliableSocket(const string &localAddress, unsigned short localPort, const char *configPath) throw(SocketException);
+    ReliableSocket(const string &localAddress, unsigned short localPort, const char *configPath);
 
     /**
      * Release the memory allocated in packetsBuffer.
@@ -96,33 +96,33 @@ public:
      * Override the parent function using the exactly the same function
      *     cause protected inherit can't access parent function from outer.
      */
-    string getForeignAddress() const throw(SocketException) override {return UdpSocket::getForeignAddress();}
-    unsigned short getForeignPort() const throw(SocketException) override {return UdpSocket::getForeignPort();}
+    string getForeignAddress() const override {return UdpSocket::getForeignAddress();}
+    unsigned short getForeignPort() const override {return UdpSocket::getForeignPort();}
 
     /**
      * Load config from a json file. Such as: timeoutInterval, packetSize.
      * @param configPath configuration file path.
      */
-    virtual Json::Value loadConfig(const char *configPath) throw(SocketException);
+    virtual Json::Value loadConfig(const char *configPath);
 
     /**
      * Set packetsBuffer with char pointer and buffer length, avoid terminated char
      * @param message message char pointer
      * @param mLength message buffer length
      */
-    void setPackets(const char *message, unsigned int mLength) throw(SocketException);
+    void setPackets(const char *message, unsigned int mLength);
 
     /**
      * Set packetsBuffer with message body. You should call sendPackets manually after setting
      * @param messageBody the message body to be sent.
      */
-    void setPackets(const string& messageBody) throw(SocketException);
+    void setPackets(const string& messageBody);
 
     /**
      * Accept integer as parameter. It will malloc empty space with message length.
      * @param messageLength message length
      */
-    void setPackets(unsigned int mLength) throw(SocketException);
+    void setPackets(unsigned int mLength);
 
     /**
      * Get message length of the combined packets
@@ -134,19 +134,19 @@ public:
      * Combine seperated packets into a char array,
      *  with the help of dest length, original message can be
      */
-    void readMessage(char *destBuffer, int destBufferSize) const throw(SocketException);
+    void readMessage(char *destBuffer, int destBufferSize) const;
 
     /**
      * Server side socket should call this function bind its address and port first
      * @exception you shouldn't call this function when you have already bind once
      */
-     void bindLocalAddressPort (const string& address, unsigned short port) throw(SocketException);
+     void bindLocalAddressPort (const string& address, unsigned short port);
 
      /**
       * Waiting for the first handshake packets.
       * Server side socket should call this function first.
       */
-     virtual void startListen() throw(SocketException);
+     virtual void startListen();
 
      /**
       * Client side socket should call this function bind its peer address and port,
@@ -154,21 +154,21 @@ public:
       * @param address Foreign peer address
       * @param port Foreign peer port
       */
-     virtual void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException);
+     virtual void connectForeignAddressPort (const string& address, unsigned short port);
 
      /**
       * Major function of this socket, reliably receive message from peer side
       */
-     virtual void receiveMessage() throw(SocketException);
+     virtual void receiveMessage();
 
      /**
       * Major function of this socket, reliably send message to peer side.
       */
-     virtual void sendMessage() throw(SocketException);
+     virtual void sendMessage();
 
 private:
-    void sendSinglePacket(unsigned short seqNumber) throw(SocketException);
-    void sendSinglePacket(formatPacket fpk, bool &successCheck) throw(SocketException);
+    void sendSinglePacket(unsigned short seqNumber);
+    void sendSinglePacket(formatPacket fpk, bool &successCheck);
 
 protected:
     /**

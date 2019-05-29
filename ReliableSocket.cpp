@@ -66,7 +66,7 @@ ReliableSocket::formatPacket ReliableSocket::getLenPacket() const {
     return lpacket;
 }
 
-ReliableSocket::formatPacket ReliableSocket::getMsgAckPacket(unsigned short seqNumber) const throw(SocketException){
+ReliableSocket::formatPacket ReliableSocket::getMsgAckPacket(unsigned short seqNumber) const{
     if(seqNumber * packetSize > messageLength)
         throw SocketException("Sequence number out of range", false);
     formatPacket mapacket;
@@ -75,14 +75,14 @@ ReliableSocket::formatPacket ReliableSocket::getMsgAckPacket(unsigned short seqN
     return mapacket;
 }
 
-ReliableSocket::formatPacket ReliableSocket::getLenAckPacket() const throw(SocketException) {
+ReliableSocket::formatPacket ReliableSocket::getLenAckPacket() const {
     formatPacket lapacket;
     lapacket.flag = (LEN_FLAG | ACK_FLAG);
     return lapacket;
 }
 
 ReliableSocket::formatPacket ReliableSocket::getMsgPacket(unsigned short seqNumber)
-const throw(SocketException){
+const{
     if(seqNumber * packetSize > messageLength)
         throw SocketException("Sequence number out of range", false);
     formatPacket mpacket;
@@ -107,17 +107,16 @@ ReliableSocket::formatPacket ReliableSocket::getFinPacket(bool isMsgFin) const {
 }
 
 
-ReliableSocket::ReliableSocket(const char *configPath) throw(SocketException) : UdpSocket(){
+ReliableSocket::ReliableSocket(const char *configPath) : UdpSocket(){
     loadConfig(configPath);
 }
 
-ReliableSocket::ReliableSocket(unsigned short localPort, const char *configPath)
-throw(SocketException): UdpSocket(localPort) {
+ReliableSocket::ReliableSocket(unsigned short localPort, const char *configPath) : UdpSocket(localPort) {
     loadConfig(configPath);
 }
 
 ReliableSocket::ReliableSocket(const string &localAddress, unsigned short localPort,
-        const char *configPath) throw(SocketException): UdpSocket(localAddress, localPort) {
+        const char *configPath): UdpSocket(localAddress, localPort) {
     loadConfig(configPath);
 }
 
@@ -125,7 +124,7 @@ ReliableSocket::~ReliableSocket() {
     for(auto packet: packetsBuffer) delete []packet;
 }
 
-Json::Value ReliableSocket::loadConfig(const char *configPath) throw(SocketException) {
+Json::Value ReliableSocket::loadConfig(const char *configPath) {
     // TODO: Load all chars into string from file.
     ifstream configFile;
     configFile.open(configPath);
@@ -176,7 +175,7 @@ Json::Value ReliableSocket::loadConfig(const char *configPath) throw(SocketExcep
     return configValue;
 }
 
-void ReliableSocket::setPackets(const char *message, unsigned int mLength) throw(SocketException) {
+void ReliableSocket::setPackets(const char *message, unsigned int mLength) {
     if (messageLength != 0) {
         for(auto packet: packetsBuffer) delete []packet;
         packetsBuffer.clear(); packetsConfirm.clear();
@@ -199,12 +198,12 @@ void ReliableSocket::setPackets(const char *message, unsigned int mLength) throw
 #endif
 }
 
-void ReliableSocket::setPackets(const string &messageBody) throw(SocketException) {
+void ReliableSocket::setPackets(const string &messageBody) {
     if (messageBody.size() >= UINT32_MAX) throw SocketException("Message to long", false);
     this->setPackets(messageBody.c_str(), messageBody.size());
 }
 
-void ReliableSocket::setPackets(unsigned int mLength) throw(SocketException) {
+void ReliableSocket::setPackets(unsigned int mLength) {
     if (messageLength != 0) {
         for(auto packet: packetsBuffer) delete []packet;
         packetsBuffer.clear(); packetsConfirm.clear();
@@ -227,7 +226,7 @@ void ReliableSocket::setPackets(unsigned int mLength) throw(SocketException) {
 
 unsigned int ReliableSocket::getMessageLength() const {return messageLength;}
 
-void ReliableSocket::readMessage(char *destBuffer, int destBufferSize) const throw(SocketException) {
+void ReliableSocket::readMessage(char *destBuffer, int destBufferSize) const {
     if (destBufferSize <= messageLength) {
         throw SocketException("Please passed a buffer with more space. [Consider trailing \\0]");
     }
@@ -241,15 +240,14 @@ void ReliableSocket::readMessage(char *destBuffer, int destBufferSize) const thr
     destBuffer[messageLength] = '\0';
 }
 
-void ReliableSocket::bindLocalAddressPort(const string &address, unsigned short port)
-throw(SocketException) {
+void ReliableSocket::bindLocalAddressPort(const string &address, unsigned short port) {
     this->setLocalAddressAndPort(address, port);
 #ifdef RELIABLE_DEBUG
     cout << "Bind local: " << address << ":" << port << endl;
 #endif
 }
 
-void ReliableSocket::startListen() throw(SocketException) {
+void ReliableSocket::startListen() {
     char *receiveBuffer = new char [bufferSize];
     unsigned int receiveSize = 0;
     string sourceAddress; unsigned short sourcePort;
@@ -284,8 +282,7 @@ void ReliableSocket::startListen() throw(SocketException) {
     delete []hpacket.packetBody;
 }
 
-void ReliableSocket::connectForeignAddressPort(const string &address, unsigned short port)
-throw(SocketException) {
+void ReliableSocket::connectForeignAddressPort(const string &address, unsigned short port) {
     // TODO: set default send target, then send handshake packet
     this->connect(address, port);
     auto hpacket = getHanPacket();
@@ -313,7 +310,7 @@ throw(SocketException) {
     delete []hpacket.packetBody;
 }
 
-void ReliableSocket::receiveMessage() throw(SocketException) {
+void ReliableSocket::receiveMessage() {
     // TODO: STEP1 -- receive length packet
     char *receiveBuffer = new char [bufferSize];
     int receiveSize = 0;
@@ -383,7 +380,7 @@ void ReliableSocket::receiveMessage() throw(SocketException) {
     delete []hpacket.packetBody;
 }
 
-void ReliableSocket::sendMessage() throw(SocketException) {
+void ReliableSocket::sendMessage() {
     // TODO: STEP1 -- send length packet
     auto lpacket = getLenPacket();
     bool lenSuccess = false;
@@ -447,7 +444,7 @@ void ReliableSocket::sendMessage() throw(SocketException) {
     delete []receiveBuffer;
 }
 
-void ReliableSocket::sendSinglePacket(unsigned short seqNumber) throw(SocketException) {
+void ReliableSocket::sendSinglePacket(unsigned short seqNumber) {
     auto fpk = getMsgPacket(seqNumber);
     char *packet = deparsePacket(fpk);
     for (unsigned int i = 0; i < retryTimes; ++i) {
@@ -465,8 +462,7 @@ void ReliableSocket::sendSinglePacket(unsigned short seqNumber) throw(SocketExce
     throw SocketException("Lose connection. Message Seq: " + to_string(fpk.seqNumber), true);
 }
 
-void ReliableSocket::sendSinglePacket(ReliableSocket::formatPacket fpk, bool &successCheck)
-throw(SocketException) {
+void ReliableSocket::sendSinglePacket(ReliableSocket::formatPacket fpk, bool &successCheck) {
     stringstream ss;
     if ((fpk.flag & HAN_FLAG) != 0u) ss << "HAN ";
     if ((fpk.flag & LEN_FLAG) != 0u) ss << "LEN ";

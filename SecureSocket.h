@@ -28,7 +28,7 @@ private:
      * @param srcBuffer source buffer
      * @param srcSize source buffer size
      */
-    void parsePublicPacket (const char* srcBuffer) throw(SocketException);
+    void parsePublicPacket (const char* srcBuffer);
 
     /**
      * Get private packet which is used to send (g^X mod p)
@@ -42,22 +42,21 @@ private:
      * @param srcBuffer source buffer
      * @param srcSize source buffer size
      */
-    void parsePrivatePacket (const char* srcBuffer) throw(SocketException);
+    void parsePrivatePacket (const char* srcBuffer);
 
 public:
     /**
      *   Construct a secure socket
      *   @exception SocketException thrown if unable to create secure socket
      */
-    SecureSocket(const char *configPath) throw(SocketException);
+    SecureSocket(const char *configPath);
 
     /**
      *   Construct a secure socket with the given local port
      *   @param localPort local ports
      *   @exception SocketException thrown if unable to create reliable UDP socket
      */
-    SecureSocket(unsigned short localPort, const char *configPath = "./config.json")
-    throw(SocketException);
+    SecureSocket(unsigned short localPort, const char *configPath = "./config.json");
 
     /**
      *   Construct a secure socket with the given local port and address
@@ -66,7 +65,7 @@ public:
      *   @exception SocketException thrown if unable to create secure socket
      */
     SecureSocket(const string &localAddress, unsigned short localPort,
-                   const char *configPath = "./config.json") throw(SocketException);
+                   const char *configPath = "./config.json");
 
     /**
      * release memory allocated for gmp big integer.
@@ -78,13 +77,13 @@ public:
      *   publicPrimeP, publicPrimeG: if not prime - raise error, if not provided p=random(1024) g=65537
      * @param configPath configuration file path.
      */
-    Json::Value loadConfig(const char *configPath) throw(SocketException) override;
+    Json::Value loadConfig(const char *configPath)  override;
 
     /**
      * Waiting for the first handshake packets. Server side socket should call this function first.
      * Override parent startListen for exchanging key.
      */
-    void startListen() throw(SocketException) override;
+    void startListen() override;
 
     /**
      * Client side socket should call this function bind its peer address and port,
@@ -93,19 +92,19 @@ public:
      * @param address Foreign peer address
      * @param port Foreign peer port
      */
-    void connectForeignAddressPort (const string& address, unsigned short port) throw(SocketException) override;
+    void connectForeignAddressPort (const string& address, unsigned short port) override;
 
     /**
       * Major function of this socket, reliably send message to peer side.
       * program will choice exchangeKey little endian arrangement first bits as AES key.
       */
-    void sendMessage() throw(SocketException) override;
+    void sendMessage() override;
 
     /**
      * Major function of this socket, reliably send message to peer side.
      * program will choice exchangeKey little endian arrangement first bits as AES key.
      */
-    void receiveMessage() throw(SocketException) override;
+    void receiveMessage() override;
 
 
 protected:

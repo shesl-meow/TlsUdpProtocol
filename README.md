@@ -9,6 +9,7 @@
    1. 手册：<https://gmplib.org/manual/>
    2. 接口：<https://gmplib.org/manual/C_002b_002b-Class-Interface.html#C_002b_002b-Class-Interface>
    3. 数论接口：<https://gmplib.org/manual/Number-Theoretic-Functions.html>
+3. 本项目引用了 `openssl` 这个开源加密项目进行加密，编译时使用命令行参数 `-lcrypto`。
 
 ## 协议简述
 

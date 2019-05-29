@@ -99,3 +99,5 @@ fabric.properties
 
 # cmake debug folder
 cmake-build-debug/
+CMakeFiles/
+CMakeCache.txt

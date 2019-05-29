@@ -28,7 +28,7 @@ void SecureSocket::getPublicPacket(char *destBuffer, unsigned int destSize) cons
     assert(writenSize <= primeBitsLength/8);
 }
 
-void SecureSocket::parsePublicPacket(const char *srcBuffer) throw(SocketException){
+void SecureSocket::parsePublicPacket(const char *srcBuffer){
     if ( (*((unsigned short*)srcBuffer + 1) ^ PUB_FLAG) != 0u)
         throw SocketException("Try to parse a non-public packet.");
     unsigned short bodySize = *((unsigned short*)srcBuffer);
@@ -60,7 +60,7 @@ void SecureSocket::getPrivatePacket(char *destBuffer, unsigned int destSize) con
     mpz_clear(gxp);
 }
 
-void SecureSocket::parsePrivatePacket(const char *srcBuffer) throw(SocketException) {
+void SecureSocket::parsePrivatePacket(const char *srcBuffer) {
     if ( (*((unsigned short*)srcBuffer + 1) ^ SEC_FLAG) != 0u)
         throw SocketException("Try to parse a non-private packet.");
     unsigned short bodySize = *((unsigned short*)srcBuffer);
@@ -80,18 +80,15 @@ void SecureSocket::parsePrivatePacket(const char *srcBuffer) throw(SocketExcepti
 #endif
 }
 
-SecureSocket::SecureSocket(const char *configPath)
-throw(SocketException): ReliableSocket(){
+SecureSocket::SecureSocket(const char *configPath) : ReliableSocket(){
     loadConfig(configPath);
 }
 
-SecureSocket::SecureSocket(unsigned short localPort, const char *configPath)
-throw(SocketException): ReliableSocket(localPort) {
+SecureSocket::SecureSocket(unsigned short localPort, const char *configPath) : ReliableSocket(localPort) {
     loadConfig(configPath);
 }
 
-SecureSocket::SecureSocket(const string &localAddress, unsigned short localPort, const char *configPath)
-throw(SocketException): ReliableSocket(localAddress, localPort) {
+SecureSocket::SecureSocket(const string &localAddress, unsigned short localPort, const char *configPath) : ReliableSocket(localAddress, localPort) {
     loadConfig(configPath);
 }
 
@@ -102,7 +99,7 @@ SecureSocket::~SecureSocket() {
     mpz_clear(exchangedKey);
 }
 
-Json::Value SecureSocket::loadConfig(const char *configPath) throw(SocketException) {
+Json::Value SecureSocket::loadConfig(const char *configPath) {
     mpz_inits(publicPrimeP, publicPrimeG, privateXNumber, exchangedKey, NULL);
     // TODO: initialize random requirement
     gmp_randstate_t r_state;
@@ -147,7 +144,7 @@ Json::Value SecureSocket::loadConfig(const char *configPath) throw(SocketExcepti
     return configVal;
 }
 
-void SecureSocket::startListen() throw(SocketException){
+void SecureSocket::startListen(){
     ReliableSocket::startListen();
     // TODO: STEP1 -- Send public message to client side.
     char* pubpacket = new char [(primeBitsLength/8)*2 + 4];
@@ -169,8 +166,7 @@ void SecureSocket::startListen() throw(SocketException){
     delete []prvpacket;
 }
 
-void SecureSocket::connectForeignAddressPort(const string &address, unsigned short port)
-throw(SocketException) {
+void SecureSocket::connectForeignAddressPort(const string &address, unsigned short port) {
     ReliableSocket::connectForeignAddressPort(address, port);
     // TODO: STEP1 -- Receive public message from peer side.
     ReliableSocket::receiveMessage();
@@ -192,7 +188,7 @@ throw(SocketException) {
     delete []prvmessage;
 }
 
-void SecureSocket::sendMessage() throw(SocketException) {
+void SecureSocket::sendMessage() {
     // TODO: STEP1 -- get AES key and plaintext
     auto mLength = messageLength;
     auto charkey = new unsigned char[primeBitsLength/8];
@@ -225,7 +221,7 @@ void SecureSocket::sendMessage() throw(SocketException) {
     delete []charkey; delete []plaintext; delete []ciphertext; delete []lencipher;
 }
 
-void SecureSocket::receiveMessage() throw(SocketException) {
+void SecureSocket::receiveMessage() {
     // TODO: STEP1 -- get AES key
     auto charkey = new unsigned char[primeBitsLength/8];
     size_t writenSize;
