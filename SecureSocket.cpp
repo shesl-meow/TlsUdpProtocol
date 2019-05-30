@@ -10,6 +10,8 @@
 #include <time.h>
 #include <assert.h>
 #include <openssl/aes.h>
+#include <cstring>
+#include <string>
 
 #define PUB_FLAG 0x80u
 #define SEC_FLAG 0x40u
@@ -189,12 +191,10 @@ void SecureSocket::connectForeignAddressPort(const string &address, unsigned sho
 }
 
 void SecureSocket::sendMessage() {
-    // TODO: STEP1 -- get AES key and plaintext
+    // TODO: STEP1 -- get AES key & iv & plaintext
     auto mLength = messageLength;
-    auto charkey = new unsigned char[primeBitsLength/8];
-    size_t writenSize;
-    mpz_export(charkey, &writenSize, -1, sizeof(unsigned char), -1, 0, exchangedKey);
-    assert(writenSize <= primeBitsLength/8);
+    auto charkey = new unsigned char [primeBitsLength/8];
+    mpz_export(charkey, nullptr, -1, sizeof(unsigned char), -1, 0, exchangedKey);
     AES_KEY aeskey;
     AES_set_encrypt_key(charkey, aesKeyBitsLength, &aeskey);
 
@@ -202,42 +202,49 @@ void SecureSocket::sendMessage() {
     this->readMessage(reinterpret_cast<char *>(plaintext), mLength + 1);
 
     // TODO: STEP2 -- send encrypted plaintext length
-    auto lencipher = new unsigned char [16];
-    AES_encrypt(reinterpret_cast<const unsigned char *>(to_string(mLength).c_str()), lencipher, &aeskey);
-    this->setPackets(reinterpret_cast<char *>(lencipher), 16);
+    unsigned char plainlen[AES_BLOCK_SIZE * 2] = {0}, cipherlen[AES_BLOCK_SIZE * 2] = {0};
+    *((unsigned int*)plainlen) = mLength;
+    AES_cbc_encrypt(plainlen, cipherlen, AES_BLOCK_SIZE * 2,
+            &aeskey, (charkey + aesKeyBitsLength/8), AES_ENCRYPT);
+    this->setPackets(reinterpret_cast<char *>(cipherlen), AES_BLOCK_SIZE * 2);
     ReliableSocket::sendMessage();
 #ifdef SECURE_DEBUG
+//    mpz_export(charkey, nullptr, -1, sizeof(unsigned char), -1, 0, exchangedKey);
+//    AES_KEY deaeskey;
+//    AES_set_decrypt_key(charkey, aesKeyBitsLength/8, &deaeskey);
+//    AES_cbc_encrypt(cipherlen, plainlen, AES_BLOCK_SIZE,
+//            &deaeskey, (charkey + aesKeyBitsLength/8), AES_DECRYPT);
     cout << "[Send encrypt] [Key length:" << aesKeyBitsLength << "] " << mLength << endl;
 #endif
 
     // TODO: STEP3 -- send encrypted plaintext
-    auto ciphertext = new unsigned char [mLength + (16 - mLength%16)];
-    AES_encrypt(plaintext, ciphertext, &aeskey);
-    this->setPackets(reinterpret_cast<char *>(ciphertext), messageLength + (16 - messageLength%16));
+    auto ciphertext = new unsigned char [mLength + (AES_BLOCK_SIZE - mLength%AES_BLOCK_SIZE)];
+    AES_cbc_encrypt(plaintext, ciphertext, mLength,
+            &aeskey, (charkey + aesKeyBitsLength/8), AES_ENCRYPT);
+    this->setPackets(reinterpret_cast<char *>(ciphertext),
+            messageLength + (AES_BLOCK_SIZE - messageLength%AES_BLOCK_SIZE));
     ReliableSocket::sendMessage();
 #ifdef SECURE_DEBUG
     cout << "[Send encrypt] [Key length:" << aesKeyBitsLength << "] " << plaintext << endl;
 #endif
-    delete []charkey; delete []plaintext; delete []ciphertext; delete []lencipher;
+    delete []charkey; delete []plaintext; delete []ciphertext;
 }
 
 void SecureSocket::receiveMessage() {
-    // TODO: STEP1 -- get AES key
+    // TODO: STEP1 -- get AES key & iv
     auto charkey = new unsigned char[primeBitsLength/8];
-    size_t writenSize;
-    mpz_export(charkey, &writenSize, -1, sizeof(unsigned char), -1, 0, exchangedKey);
-    assert(writenSize <= primeBitsLength/8);
+    mpz_export(charkey, nullptr, -1, sizeof(unsigned char), -1, 0, exchangedKey);
     AES_KEY aeskey;
     AES_set_decrypt_key(charkey, aesKeyBitsLength, &aeskey);
 
     // TODO: STEP2 -- receive encrypted length message
     ReliableSocket::receiveMessage();
-    if (messageLength != 16) throw SocketException("Please send encrypt length message first");
-    auto cipherlen = new unsigned char [16 + 1];
-    auto plainlen = new unsigned char [16];
-    this->readMessage(reinterpret_cast<char *>(cipherlen), 16 + 1);
-    AES_decrypt(cipherlen, plainlen, &aeskey);
-    unsigned int mLength = atoi(reinterpret_cast<char*>(plainlen));
+    if (messageLength != AES_BLOCK_SIZE * 2) throw SocketException("Please send encrypt length message first");
+    unsigned char cipherlen[AES_BLOCK_SIZE * 2 + 1] = {0}, plainlen[AES_BLOCK_SIZE * 2] = {0};
+    this->readMessage(reinterpret_cast<char *>(cipherlen), AES_BLOCK_SIZE * 2 + 1);
+    AES_cbc_encrypt(cipherlen, plainlen, AES_BLOCK_SIZE * 2,
+            &aeskey, (charkey + aesKeyBitsLength/8), AES_DECRYPT);
+    unsigned int mLength = *((unsigned int*)plainlen);
 #ifdef SECURE_DEBUG
     cout << "[Received decrypt] [Key length:" << aesKeyBitsLength << "] " << mLength << endl;
 #endif
@@ -247,10 +254,12 @@ void SecureSocket::receiveMessage() {
     auto ciphertext = new unsigned char [messageLength + 1];
     this->readMessage(reinterpret_cast<char *>(ciphertext), messageLength + 1);
     auto plaintext = new unsigned char [messageLength];
-    AES_decrypt(ciphertext, plaintext, &aeskey);
+    AES_cbc_encrypt(ciphertext, plaintext, mLength,
+            &aeskey, (charkey + aesKeyBitsLength/8), AES_DECRYPT);
     this->setPackets(reinterpret_cast<char *>(plaintext), mLength);
 #ifdef SECURE_DEBUG
-    cout << "[Received decrypt] [Key length:" << aesKeyBitsLength << "] " << plaintext << endl;
+    cout << "[Received decrypt] [Key length:" << aesKeyBitsLength << "] "
+        << string(reinterpret_cast<char *>(plaintext), mLength) << endl;
 #endif
-    delete []charkey; delete []plaintext; delete []ciphertext; delete []cipherlen; delete []plainlen;
+    delete []charkey; delete []plaintext; delete []ciphertext;
 }

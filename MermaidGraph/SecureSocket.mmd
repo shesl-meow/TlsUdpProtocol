@@ -9,9 +9,10 @@ alt DH密钥交换
     Server-->>Client: Private Message [g^Xs mod p]
     Client->>Client: Get shared key
 end
-alt AES加密传输
-	Server-->>Client: sendMessage() encrypt
-	Client->>Client: receiveMessage() decrypt
-	Client-->>Server: sendMessage() encrypt
-	Server->>Server: receiveMessage() decrypt
+alt AES CBC 加密传输 Server->Client
+	Server->>Server: Get CBC key&iv
+	Server-->>Client: 32bytes encrypted l
+	Client->>Client: Get decypted l
+	Server->>Client: l bytes encrypted message
+	Client->>Client: Get decrypted message
 end
