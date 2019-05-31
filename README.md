@@ -11,6 +11,14 @@
    3. 数论接口：<https://gmplib.org/manual/Number-Theoretic-Functions.html>
 3. 本项目引用了 `openssl` 这个开源加密项目进行加密，编译时使用命令行参数 `-lcrypto`。
 
+## `UdpSocket`
+
+一个通过面向对象编程的方式，将底层提供的 `UDP` 封装成一个对象。参考：http://cs.ecs.baylor.edu/~donahoo/practical/CSockets/practical/
+
+以下是可执行文件 `TestClass/UdpServer.cpp` 与 `TestClass/UdpTelnet.cpp` 的演示视频：
+
+[![asciicast](https://asciinema.org/a/249387.svg)](https://asciinema.org/a/249387)
+
 ## `ReliableSocket`
 
 这个简单的 `TlsUdpProtocol` 项目在实现可靠的传输层协议 `ReliableSocket` 时忽略了以下这些问题：
@@ -28,15 +36,13 @@
 | :-------: | :--------: | :--------: | :--------: | :----------: | :----------: | :--------: |
 | 包的长度  | 包的序列号 | 握手标志位 | 结束标志位 | `ACK` 标志位 | `MSG` 标志位 |  尚未使用  |
 
-`ReliableSocket` 建立大致的连接过程（有过调整）：
+`ReliableSocket` 建立大致的连接过程（有过调整）与外界调用的 `API`：
 
-- 程序内部逻辑：
+<img src="./ReliableSocket.svg" width=56%/><img src="./ReliableSocketAPI.svg" width=44%/>
 
-  ![ReliableSocket](./ReliableSocket.svg)
+以下是可执行文件 `TestClass/ReliableServer.cpp` 与 `TestClass/ReliableTelnet.cpp` 的演示视频：
 
-- 调用的 `API` 函数尽量的模拟 TCP 的 API 函数：
-
-  ![ReliableSocketAPI](./ReliableSocketAPI.svg)
+[![asciicast](https://asciinema.org/a/I01VCzMSq39dIbA4dIMbFZpxM.svg)](https://asciinema.org/a/I01VCzMSq39dIbA4dIMbFZpxM)
 
 ## `SecureSocket`
 
@@ -69,24 +75,9 @@
 
 传输示例图如下：
 
+<img src="./SecureSocket.svg" width=50%>
 
+以下是可执行文件 `TestClass/SecureServer.cpp` 与 `TestClass/SecureTelnet.cpp` 的演示视频：
 
-![SecureSocket](./SecureSocket.svg)
+[![asciicast](https://asciinema.org/a/d47IeHxNzAjK6U8QeNHdnWC0u.svg)](https://asciinema.org/a/d47IeHxNzAjK6U8QeNHdnWC0u)
 
-## 项目结构 可执行文件
-
-### `TestClass/UdpTelnet.cpp`
-
-一个包含 `main` 函数的可执行文件，其使用方式为：
-
-```bash
-$ ./udptelnet <Server IP> <Server Port>
-```
-
-之后在标准输入中对程序进行输入，程序会将字符串发送给目标主机。
-
-## 项目结构 类
-
-### `UdpSocket`
-
-一个包含实现 UDP 套接字的类。参考：http://cs.ecs.baylor.edu/~donahoo/practical/CSockets/practical/

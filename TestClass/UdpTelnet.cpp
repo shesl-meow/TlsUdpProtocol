@@ -45,17 +45,16 @@ int main(int argc, char *argv[]) {
     try {
         UdpSocket sock;
         while(true){
-            cout << "> ";
-            cin >> echoString;                  // Read the string from console
+            cout << "> "; cin >> echoString;
             echoStringLen = strlen(echoString);
 
-            if (echoStringLen > ECHOMAX) {              // Check input length
+            if (strlen(echoString) > ECHOMAX) {              // Check input length
                 cerr << "Echo string too long" << endl;
                 exit(1);
             }
+            if (strcmp(echoString, "exit") == 0) break;
 
-            // Send the string to the Server
-            sock.sendTo(echoString, echoStringLen, servAddress, echoServPort);
+            sock.sendTo(echoString, strlen(echoString), servAddress, echoServPort);
 
             // Receive a response
             char echoBuffer[ECHOMAX + 1];       // Buffer for echoed string + \0
@@ -65,10 +64,8 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
-            echoBuffer[respStringLen] = '\0';             // Terminate the string!
-            cout << echoBuffer << endl;   // Print the echoed arg
-
-            // Destructor closes the socket
+            echoBuffer[respStringLen] = '\0';
+            cout << echoBuffer << endl;
         }
     } catch (SocketException &e) {
         cerr << e.what() << endl;
