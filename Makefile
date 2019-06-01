@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named appclient
+
+# Build rule for target.
+appclient: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 appclient
+.PHONY : appclient
+
+# fast build rule for target.
+appclient/fast:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/build
+.PHONY : appclient/fast
+
+#=============================================================================
 # Target rules for targets named reliableserver
 
 # Build rule for target.
@@ -163,6 +176,19 @@ reliabletelnet/fast:
 .PHONY : reliabletelnet/fast
 
 #=============================================================================
+# Target rules for targets named appserver
+
+# Build rule for target.
+appserver: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 appserver
+.PHONY : appserver
+
+# fast build rule for target.
+appserver/fast:
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/build
+.PHONY : appserver/fast
+
+#=============================================================================
 # Target rules for targets named secureserver
 
 # Build rule for target.
@@ -188,14 +214,73 @@ securetelnet/fast:
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/build
 .PHONY : securetelnet/fast
 
+AppSocket.o: AppSocket.cpp.o
+
+.PHONY : AppSocket.o
+
+# target to build an object file
+AppSocket.cpp.o:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/AppSocket.cpp.o
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/AppSocket.cpp.o
+.PHONY : AppSocket.cpp.o
+
+AppSocket.i: AppSocket.cpp.i
+
+.PHONY : AppSocket.i
+
+# target to preprocess a source file
+AppSocket.cpp.i:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/AppSocket.cpp.i
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/AppSocket.cpp.i
+.PHONY : AppSocket.cpp.i
+
+AppSocket.s: AppSocket.cpp.s
+
+.PHONY : AppSocket.s
+
+# target to generate assembly for a file
+AppSocket.cpp.s:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/AppSocket.cpp.s
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/AppSocket.cpp.s
+.PHONY : AppSocket.cpp.s
+
+Client/AppClient.o: Client/AppClient.cpp.o
+
+.PHONY : Client/AppClient.o
+
+# target to build an object file
+Client/AppClient.cpp.o:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/Client/AppClient.cpp.o
+.PHONY : Client/AppClient.cpp.o
+
+Client/AppClient.i: Client/AppClient.cpp.i
+
+.PHONY : Client/AppClient.i
+
+# target to preprocess a source file
+Client/AppClient.cpp.i:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/Client/AppClient.cpp.i
+.PHONY : Client/AppClient.cpp.i
+
+Client/AppClient.s: Client/AppClient.cpp.s
+
+.PHONY : Client/AppClient.s
+
+# target to generate assembly for a file
+Client/AppClient.cpp.s:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/Client/AppClient.cpp.s
+.PHONY : Client/AppClient.cpp.s
+
 ReliableSocket.o: ReliableSocket.cpp.o
 
 .PHONY : ReliableSocket.o
 
 # target to build an object file
 ReliableSocket.cpp.o:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/ReliableSocket.cpp.o
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/ReliableSocket.cpp.o
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/ReliableSocket.cpp.o
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/ReliableSocket.cpp.o
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/ReliableSocket.cpp.o
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/ReliableSocket.cpp.o
 .PHONY : ReliableSocket.cpp.o
@@ -206,8 +291,10 @@ ReliableSocket.i: ReliableSocket.cpp.i
 
 # target to preprocess a source file
 ReliableSocket.cpp.i:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/ReliableSocket.cpp.i
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/ReliableSocket.cpp.i
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/ReliableSocket.cpp.i
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/ReliableSocket.cpp.i
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/ReliableSocket.cpp.i
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/ReliableSocket.cpp.i
 .PHONY : ReliableSocket.cpp.i
@@ -218,8 +305,10 @@ ReliableSocket.s: ReliableSocket.cpp.s
 
 # target to generate assembly for a file
 ReliableSocket.cpp.s:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/ReliableSocket.cpp.s
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/ReliableSocket.cpp.s
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/ReliableSocket.cpp.s
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/ReliableSocket.cpp.s
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/ReliableSocket.cpp.s
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/ReliableSocket.cpp.s
 .PHONY : ReliableSocket.cpp.s
@@ -230,6 +319,8 @@ SecureSocket.o: SecureSocket.cpp.o
 
 # target to build an object file
 SecureSocket.cpp.o:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/SecureSocket.cpp.o
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/SecureSocket.cpp.o
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/SecureSocket.cpp.o
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/SecureSocket.cpp.o
 .PHONY : SecureSocket.cpp.o
@@ -240,6 +331,8 @@ SecureSocket.i: SecureSocket.cpp.i
 
 # target to preprocess a source file
 SecureSocket.cpp.i:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/SecureSocket.cpp.i
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/SecureSocket.cpp.i
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/SecureSocket.cpp.i
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/SecureSocket.cpp.i
 .PHONY : SecureSocket.cpp.i
@@ -250,9 +343,38 @@ SecureSocket.s: SecureSocket.cpp.s
 
 # target to generate assembly for a file
 SecureSocket.cpp.s:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/SecureSocket.cpp.s
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/SecureSocket.cpp.s
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/SecureSocket.cpp.s
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/SecureSocket.cpp.s
 .PHONY : SecureSocket.cpp.s
+
+Server/AppServer.o: Server/AppServer.cpp.o
+
+.PHONY : Server/AppServer.o
+
+# target to build an object file
+Server/AppServer.cpp.o:
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/Server/AppServer.cpp.o
+.PHONY : Server/AppServer.cpp.o
+
+Server/AppServer.i: Server/AppServer.cpp.i
+
+.PHONY : Server/AppServer.i
+
+# target to preprocess a source file
+Server/AppServer.cpp.i:
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/Server/AppServer.cpp.i
+.PHONY : Server/AppServer.cpp.i
+
+Server/AppServer.s: Server/AppServer.cpp.s
+
+.PHONY : Server/AppServer.s
+
+# target to generate assembly for a file
+Server/AppServer.cpp.s:
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/Server/AppServer.cpp.s
+.PHONY : Server/AppServer.cpp.s
 
 TestClass/ReliableServer.o: TestClass/ReliableServer.cpp.o
 
@@ -422,10 +544,12 @@ UdpSocket.o: UdpSocket.cpp.o
 
 # target to build an object file
 UdpSocket.cpp.o:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/udptelnet.dir/build.make CMakeFiles/udptelnet.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/udpserver.dir/build.make CMakeFiles/udpserver.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/UdpSocket.cpp.o
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/UdpSocket.cpp.o
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/UdpSocket.cpp.o
 .PHONY : UdpSocket.cpp.o
@@ -436,10 +560,12 @@ UdpSocket.i: UdpSocket.cpp.i
 
 # target to preprocess a source file
 UdpSocket.cpp.i:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/udptelnet.dir/build.make CMakeFiles/udptelnet.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/udpserver.dir/build.make CMakeFiles/udpserver.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/UdpSocket.cpp.i
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/UdpSocket.cpp.i
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/UdpSocket.cpp.i
 .PHONY : UdpSocket.cpp.i
@@ -450,10 +576,12 @@ UdpSocket.s: UdpSocket.cpp.s
 
 # target to generate assembly for a file
 UdpSocket.cpp.s:
+	$(MAKE) -f CMakeFiles/appclient.dir/build.make CMakeFiles/appclient.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/reliableserver.dir/build.make CMakeFiles/reliableserver.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/udptelnet.dir/build.make CMakeFiles/udptelnet.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/udpserver.dir/build.make CMakeFiles/udpserver.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/reliabletelnet.dir/build.make CMakeFiles/reliabletelnet.dir/UdpSocket.cpp.s
+	$(MAKE) -f CMakeFiles/appserver.dir/build.make CMakeFiles/appserver.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/secureserver.dir/build.make CMakeFiles/secureserver.dir/UdpSocket.cpp.s
 	$(MAKE) -f CMakeFiles/securetelnet.dir/build.make CMakeFiles/securetelnet.dir/UdpSocket.cpp.s
 .PHONY : UdpSocket.cpp.s
@@ -465,19 +593,30 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
+	@echo "... appclient"
 	@echo "... edit_cache"
 	@echo "... reliableserver"
 	@echo "... udptelnet"
 	@echo "... udpserver"
 	@echo "... reliabletelnet"
+	@echo "... appserver"
 	@echo "... secureserver"
 	@echo "... securetelnet"
+	@echo "... AppSocket.o"
+	@echo "... AppSocket.i"
+	@echo "... AppSocket.s"
+	@echo "... Client/AppClient.o"
+	@echo "... Client/AppClient.i"
+	@echo "... Client/AppClient.s"
 	@echo "... ReliableSocket.o"
 	@echo "... ReliableSocket.i"
 	@echo "... ReliableSocket.s"
 	@echo "... SecureSocket.o"
 	@echo "... SecureSocket.i"
 	@echo "... SecureSocket.s"
+	@echo "... Server/AppServer.o"
+	@echo "... Server/AppServer.i"
+	@echo "... Server/AppServer.s"
 	@echo "... TestClass/ReliableServer.o"
 	@echo "... TestClass/ReliableServer.i"
 	@echo "... TestClass/ReliableServer.s"

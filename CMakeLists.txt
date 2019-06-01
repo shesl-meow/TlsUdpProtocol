@@ -8,12 +8,15 @@ add_executable(udpserver TestClass/UdpServer.cpp UdpSocket.cpp)
 
 add_executable(reliableserver TestClass/ReliableServer.cpp ReliableSocket.cpp UdpSocket.cpp)
 target_link_libraries(reliableserver jsoncpp pthread)
-
 add_executable(reliabletelnet TestClass/ReliableTelnet.cpp ReliableSocket.cpp UdpSocket.cpp)
 target_link_libraries(reliabletelnet jsoncpp pthread)
 
 add_executable(secureserver TestClass/SecureServer.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
 target_link_libraries(secureserver jsoncpp pthread gmp gmpxx crypto)
-
 add_executable(securetelnet TestClass/SecureTelnet.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
 target_link_libraries(securetelnet jsoncpp pthread gmp gmpxx crypto)
+
+add_executable(appserver Server/AppServer.cpp AppSocket.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
+target_link_libraries(appserver jsoncpp pthread gmp gmpxx crypto)
+add_executable(appclient Client/AppClient.cpp AppSocket.cpp SecureSocket.cpp ReliableSocket.cpp UdpSocket.cpp)
+target_link_libraries(appclient jsoncpp pthread gmp gmpxx crypto)

@@ -12,7 +12,6 @@
 /**
  * A public parameter g used in DH-KEY-EXCHANGE
  */
-#define PUBLIC_PRIME_G 65537
 
 class SecureSocket : public ReliableSocket{
 private:
