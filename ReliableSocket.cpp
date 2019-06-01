@@ -29,7 +29,7 @@
 
 // ReliableSocket Code
 
-ReliableSocket::formatPacket ReliableSocket::parsePacket(char *packet) {
+ReliableSocket::formatPacket ReliableSocket::parsePacket(const char *packet) {
     formatPacket fpacket;
     fpacket.bodySize = *(unsigned short *)packet;
     fpacket.seqNumber = *((unsigned short *)packet + 1);
@@ -41,7 +41,7 @@ ReliableSocket::formatPacket ReliableSocket::parsePacket(char *packet) {
     return fpacket;
 }
 
-char* ReliableSocket::deparsePacket(ReliableSocket::formatPacket fpacket) {
+char* ReliableSocket::deparsePacket(const ReliableSocket::formatPacket fpacket) {
     char *packet = new char [6 + fpacket.bodySize];
     *((unsigned short *)packet) = fpacket.bodySize;
     *((unsigned short *)packet + 1) = fpacket.seqNumber;

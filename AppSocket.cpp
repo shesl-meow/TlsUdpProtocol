@@ -17,6 +17,7 @@
 #pragma comment(lib, "ssleay32.lib")
 #endif
 
+// HEADER signature bits
 #define JOIN_REQ 0x01
 #define PASS_REQ 0x02
 #define PASS_RESP 0x04
@@ -26,8 +27,8 @@
 #define REJECT 0x40
 
 
-packet parsePacket(char *pac) {
-    packet fpac;
+AppSocket::formatPacket AppSocket::parsePacket(const char *pac) {
+    formatPacket fpac;
     fpac.header = *(unsigned short *)pac;
     fpac.payloadLength = *(unsigned int*)((unsigned short *)pac + 1);
     if (fpac.header == DATA)
@@ -47,7 +48,7 @@ packet parsePacket(char *pac) {
     return fpac;
 }
 
-char* deparsePacket(packet fpac)
+char* AppSocket::deparsePacket(const AppSocket::formatPacket fpac)
 {
     char* pac;
     if (fpac.header == DATA)
@@ -74,26 +75,26 @@ char* deparsePacket(packet fpac)
     return pac;
 }
 
-packet getShortPacket(unsigned short type)
+AppSocket::formatPacket AppSocket::getShortPacket(unsigned short type)
 {
-    packet fpac;
+    formatPacket fpac;
     fpac.header = type;
     fpac.payloadLength = 0;
     return fpac;
 }
-packet getMediumPacket(unsigned short type, unsigned int length, char* content)
+AppSocket::formatPacket AppSocket::getMediumPacket(unsigned short type, unsigned int length, char* content)
 {
     //length(bytes)
-    packet fpac;
+    formatPacket fpac;
     fpac.header = type;
     fpac.payloadLength = length;
     fpac.body = new char[length];
     memcpy(fpac.body, content, length);
     return fpac;
 }
-packet getLongPacket(unsigned short type, unsigned int length, unsigned int pID, char* content)
+AppSocket::formatPacket AppSocket::getLongPacket(unsigned short type, unsigned int length, unsigned int pID, char* content)
 {
-    packet fpac;
+    formatPacket fpac;
     fpac.header = type;
     fpac.payloadLength = length;
     fpac.packetID = pID;
@@ -102,78 +103,25 @@ packet getLongPacket(unsigned short type, unsigned int length, unsigned int pID,
     return fpac;
 }
 
-char* getCharPacket(unsigned short type)
+char* AppSocket::getCharPacket(unsigned short type)
 {
-    packet fpac = getShortPacket(type);
+    formatPacket fpac = getShortPacket(type);
     char* pac = deparsePacket(fpac);
     return pac;
 }
 
-char* getCharPacket(unsigned short type, unsigned int length, char* content)
+char* AppSocket::getCharPacket(unsigned short type, unsigned int length, char* content)
 {
-    packet fpac = getMediumPacket(type, length, content);
+    formatPacket fpac = getMediumPacket(type, length, content);
     char* pac = deparsePacket(fpac);
     return pac;
 }
 
-char* getCharPacket(unsigned short type, unsigned int length, unsigned int pID, char* content)
+char* AppSocket::getCharPacket(unsigned short type, unsigned int length, unsigned int pID, char* content)
 {
-    packet fpac = getLongPacket(type, length, pID, content);
+    formatPacket fpac = getLongPacket(type, length, pID, content);
     char* pac = deparsePacket(fpac);
     return pac;
-}
-
-void recvPacket(char* target, unsigned short& type, unsigned int& length, unsigned int& pID, char* content)
-{
-    packet fpac = parsePacket(target);
-    type = fpac.header;
-    length = fpac.payloadLength;
-    if (fpac.header == DATA)
-    {
-        memset(content, 0, DATA_SIZE);
-        pID = fpac.packetID;
-        memcpy(content, fpac.body, fpac.payloadLength);
-    }
-    else if (fpac.header == TERMINATE || fpac.header == PASS_RESP)
-    {
-        pID = 0;
-        memcpy(content, fpac.body, fpac.payloadLength);
-    }
-    else
-    {
-        pID = 0;
-    }
-}
-
-bool checkPassword(const char* pw3, int len3, const char* pw, int len)
-{
-    //cout << pw3 << endl << pw << endl;
-    for (int i = 0; i < len3; i++)
-    {
-        for (int j = 0; j < len; j++)
-        {
-            if (pw3[j+i] != pw[j])
-                break;
-            if (j == len - 1)
-                return true;
-        }
-        int j;
-        for (j = i; j < len3 && pw3[j] != ','; j++)
-        {}
-        i = j;
-    }
-    return false;
-}
-
-char* sha1(char* src)
-{
-    char* wbuff=new char[20];
-    SHA_CTX	c;
-    memset(wbuff, 0, sizeof(wbuff));
-    SHA1_Init(&c);
-    SHA1_Update(&c, src, strlen(src));
-    SHA1_Final((unsigned char*)wbuff, &c);
-    return wbuff;
 }
 
 AppSocket::AppSocket(const char *configPath) : SecureSocket(configPath) {}
@@ -190,7 +138,7 @@ int AppSocket::connectToServer(const char* passCat, int passLen, const char* add
     char* getContent = new char[DATA_SIZE];
     char* readbuf = new char[READ_BUF_SIZE];
     //char* pac;
-    //packet getPac;
+    //formatPacket getPac;
     unsigned short type;
     unsigned int length;
     unsigned int pID;
@@ -341,4 +289,58 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
         cout << "OK" << endl;
         return 0;
     }
+}
+
+
+void AppSocket::recvPacket(char* target, unsigned short& type, unsigned int& length, unsigned int& pID, char* content)
+{
+    formatPacket fpac = parsePacket(target);
+    type = fpac.header;
+    length = fpac.payloadLength;
+    if (fpac.header == DATA)
+    {
+        memset(content, 0, DATA_SIZE);
+        pID = fpac.packetID;
+        memcpy(content, fpac.body, fpac.payloadLength);
+    }
+    else if (fpac.header == TERMINATE || fpac.header == PASS_RESP)
+    {
+        pID = 0;
+        memcpy(content, fpac.body, fpac.payloadLength);
+    }
+    else
+    {
+        pID = 0;
+    }
+}
+
+bool AppSocket::checkPassword(const char* pw3, int len3, const char* pw, int len)
+{
+    //cout << pw3 << endl << pw << endl;
+    for (int i = 0; i < len3; i++)
+    {
+        for (int j = 0; j < len; j++)
+        {
+            if (pw3[j+i] != pw[j])
+                break;
+            if (j == len - 1)
+                return true;
+        }
+        int j;
+        for (j = i; j < len3 && pw3[j] != ','; j++)
+        {}
+        i = j;
+    }
+    return false;
+}
+
+char* AppSocket::sha1(char* src)
+{
+    char* wbuff=new char[20];
+    SHA_CTX	c;
+    memset(wbuff, 0, sizeof(wbuff));
+    SHA1_Init(&c);
+    SHA1_Update(&c, src, strlen(src));
+    SHA1_Final((unsigned char*)wbuff, &c);
+    return wbuff;
 }
