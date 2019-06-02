@@ -87,7 +87,7 @@ public:
     /**
      * Client side socket should call this function bind its peer address and port,
      *     and send the first handshake packet.
-     * Override parent startListen for exchanging key.
+     * Override parent `connectForeignAddressPort` for exchanging key.
      * @param address Foreign peer address
      * @param port Foreign peer port
      */

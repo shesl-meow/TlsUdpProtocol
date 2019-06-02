@@ -27,7 +27,6 @@ private:
     {
         unsigned short header = 0;
         unsigned int payloadLength = 0;
-        unsigned int packetID = 0;
         char* body = nullptr;
     };
 
@@ -45,6 +44,7 @@ private:
      */
     static char* deparsePacket(formatPacket pac);
 
+
     formatPacket getShortPacket(unsigned short type);
 
     formatPacket getMediumPacket(unsigned short type, unsigned int length, char* content);
@@ -56,6 +56,14 @@ private:
     char* getCharPacket(unsigned short type, unsigned int length, char* content);
 
     char* getCharPacket(unsigned short type, unsigned int length, unsigned int pID, char* content);
+
+    /**
+     * get sha1 hash value of a string with `openssl` library.
+     * @param srcBuffer source buffer
+     * @param srcSize source buffer size
+     * @param destBuffer destination buffer size with 20 bytes fix array.
+     */
+    static void getSha1Hash(const char *srcBuffer, size_t srcSize, unsigned char destBuffer[20]);
 
 public:
     /**
@@ -78,6 +86,40 @@ public:
 
     ~AppSocket();
 
+    /**
+     * Server side load file into `fileContent` in bytes format.
+     * @param filename file name with content
+     */
+    void loadFile(const char* filename);
+
+    /**
+     * Client side could write `fileContent` into a target file
+     * @param filenmae target file name
+     */
+    void writeFile(const char* filename) const;
+
+    /**
+     * Set password with a char pointer buffer and its length.
+     * @param password password char pointer buffer
+     * @param passwdLen password buffer length
+     */
+    void setPassword(const char* password, size_t passwdLen);
+
+    /**
+     * Waiting for the first handshake packets. Server side socket should call this function first.
+     * Override parent `startListen` for password validation.
+     */
+    void startListen() override;
+
+    /**
+     * Client side socket should call this function bind its peer address and port,
+     *     and send the first handshake packet.
+     * Override parent `connectForeignAddressPort` for password validation.
+     * @param address Foreign peer address
+     * @param port Foreign peer port
+     */
+    void connectForeignAddressPort (const string& address, unsigned short port) override;
+
     //passCat = 3 * password, connect with ','
     int connectToServer(const char* passCat, int passLen, const char* add);
 
@@ -88,6 +130,32 @@ public:
     bool checkPassword(const char* pw3, int len3, const char* pw, int len);
 
     char* sha1(char* src);
+
+protected:
+    /**
+     * Indicate the current password try times both in client socket and server socket.
+     */
+    int passwdTryTimes = 0;
+
+    /**
+     * Once password reach the max try times,
+     *  the server with disconnect from the client (send TERMINATE packet).
+     */
+    int passwdMaxTryTimes = 3;
+
+    /**
+     * The file content to be transmitted, which is stored in bytes format.
+     *  Server side should load content via `loadFile`; Client received from peer side.
+     * `ContentLength` contains the length of `fileContent`.
+     */
+    char *fileContent = nullptr;
+    unsigned int contentLength = 0;
+
+    /**
+     * The password bind to the socket.
+     * Server side validate password with this; Client side send this in PASS_RESP
+     */
+    char *bindPassword = nullptr;
 };
 
 

@@ -15,7 +15,7 @@
 
 #define PUB_FLAG 0x80u
 #define SEC_FLAG 0x40u
-#define SECURE_DEBUG
+//#define SECURE_DEBUG true
 
 void SecureSocket::getPublicPacket(char *destBuffer, unsigned int destSize) const {
     for(unsigned int i = 0; i < destSize; ++i) destBuffer[i] = 0x00;

@@ -7,8 +7,6 @@
 #include <fstream>
 #include <memory.h>
 #include <openssl/sha.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <stdio.h>
 
 #ifdef WIN32
@@ -26,13 +24,12 @@
 #define TERMINATE 0x20
 #define REJECT 0x40
 
+#define APP_DEBUG true
 
 AppSocket::formatPacket AppSocket::parsePacket(const char *pac) {
     formatPacket fpac;
     fpac.header = *(unsigned short *)pac;
-    fpac.payloadLength = *(unsigned int*)((unsigned short *)pac + 1);
-    if (fpac.header == DATA)
-        fpac.packetID = *(unsigned int*)((unsigned short *)pac + 3);
+    fpac.payloadLength = *(unsigned int*)(pac + 2);
 
     if (fpac.header == PASS_RESP || fpac.header == TERMINATE) {
         fpac.body = new char[fpac.payloadLength];
@@ -41,7 +38,7 @@ AppSocket::formatPacket AppSocket::parsePacket(const char *pac) {
     else if (fpac.header == DATA)
     {
         fpac.body = new char[fpac.payloadLength];
-        memcpy(fpac.body, pac + 10, fpac.payloadLength);
+        memcpy(fpac.body, pac + 6, fpac.payloadLength);
     }
     else
         fpac.body = nullptr;
@@ -50,25 +47,21 @@ AppSocket::formatPacket AppSocket::parsePacket(const char *pac) {
 
 char* AppSocket::deparsePacket(const AppSocket::formatPacket fpac)
 {
-    char* pac;
+    char* pac = new char [6 + fpac.payloadLength];
     if (fpac.header == DATA)
     {
-        pac = new char[10 + fpac.payloadLength];
         *((unsigned short *)pac) = fpac.header;
         *(unsigned int *)((unsigned short *)pac + 1) = fpac.payloadLength;
-        *(unsigned int *)((unsigned short *)pac + 3) = fpac.packetID;
-        memcpy(pac + 10, fpac.body, fpac.payloadLength);
+        memcpy(pac + 6, fpac.body, fpac.payloadLength);
     }
     else if (fpac.header == PASS_RESP || fpac.header == TERMINATE)
     {
-        pac = new char[6 + fpac.payloadLength];
         *((unsigned short *)pac) = fpac.header;
         *(unsigned int *)((unsigned short *)pac + 1) = fpac.payloadLength;
         memcpy(pac + 6, fpac.body, fpac.payloadLength);
     }
     else
     {
-        pac = new char[6];
         *((unsigned short *)pac) = fpac.header;
         *(unsigned int *)((unsigned short *)pac + 1) = fpac.payloadLength;
     }
@@ -97,7 +90,6 @@ AppSocket::formatPacket AppSocket::getLongPacket(unsigned short type, unsigned i
     formatPacket fpac;
     fpac.header = type;
     fpac.payloadLength = length;
-    fpac.packetID = pID;
     fpac.body = new char[length];
     memcpy(fpac.body, content, length);
     return fpac;
@@ -124,13 +116,72 @@ char* AppSocket::getCharPacket(unsigned short type, unsigned int length, unsigne
     return pac;
 }
 
+void AppSocket::getSha1Hash(const char *srcBuffer, size_t srcSize, unsigned char destBuffer[20]) {
+    SHA_CTX	c; SHA1_Init(&c);
+    SHA1_Update(&c, srcBuffer, srcSize);
+    SHA1_Final(destBuffer, &c);
+}
+
 AppSocket::AppSocket(const char *configPath) : SecureSocket(configPath) {}
 
 AppSocket::AppSocket(unsigned short localPort, const char *configPath) : SecureSocket(localPort, configPath) {}
 
-AppSocket::AppSocket(const string &localAddress, unsigned short localPort, const char *configPath) : SecureSocket(localAddress, localPort, configPath) {}
+AppSocket::AppSocket(const string &localAddress, unsigned short localPort,
+        const char *configPath) : SecureSocket(localAddress, localPort, configPath) {}
 
-AppSocket::~AppSocket() {}
+AppSocket::~AppSocket() {
+    delete []fileContent;
+    delete []bindPassword;
+}
+
+void AppSocket::loadFile(const char *filename) {
+    ifstream infile(filename);
+    if (!infile.is_open())
+        throw SocketException("Counldn't open file " + string(filename), true);
+
+    // TODO: get file size in bytes
+    infile.seekg(0, infile.end);
+    auto length = infile.tellg();
+    infile.seekg(0, infile.beg);
+
+    this->fileContent = new char [length];
+    infile.read(this->fileContent, length);
+    contentLength = length;
+    infile.close();
+#ifdef APP_DEBUG
+    cout << "[Load File] load " << length << " bytes from " << filename << endl;
+#endif
+}
+
+void AppSocket::writeFile(const char *filename) const {
+    ofstream outfile(filename);
+    if (!outfile.is_open())
+        throw SocketException("Counldn't open file " + string(filename), true);
+
+    outfile.write(fileContent, contentLength);
+    outfile.close();
+#ifdef APP_DEBUG
+    cout << "[Write File] write " << contentLength << " bytes to " << filename << endl;
+#endif
+}
+
+void AppSocket::setPassword(const char *password, size_t passwdLen) {
+    delete []bindPassword;
+    bindPassword = new char [passwdLen];
+    memcpy(bindPassword, password, passwdLen);
+}
+
+void AppSocket::startListen() {
+    SecureSocket::startListen();
+    auto joinPacket = getShortPacket(JOIN_REQ);
+    auto jpacket = deparsePacket(joinPacket);
+
+    delete []joinPacket.body; delete []jpacket;
+}
+
+void AppSocket::connectForeignAddressPort(const string &address, unsigned short port) {
+    SecureSocket::connectForeignAddressPort(address, port);
+}
 
 int AppSocket::connectToServer(const char* passCat, int passLen, const char* add)
 {
@@ -274,7 +325,7 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
             if (data_len == 0)
                 break;
             sendContent = getCharPacket(DATA, data_len, i, sendbuf);
-            setPackets(sendContent,10+data_len);
+            setPackets(sendContent,6+data_len);
             sendMessage();
             if (data_len < DATA_SIZE)
                 break;
@@ -300,7 +351,6 @@ void AppSocket::recvPacket(char* target, unsigned short& type, unsigned int& len
     if (fpac.header == DATA)
     {
         memset(content, 0, DATA_SIZE);
-        pID = fpac.packetID;
         memcpy(content, fpac.body, fpac.payloadLength);
     }
     else if (fpac.header == TERMINATE || fpac.header == PASS_RESP)
