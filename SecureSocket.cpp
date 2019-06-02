@@ -15,7 +15,7 @@
 
 #define PUB_FLAG 0x80u
 #define SEC_FLAG 0x40u
-//#define SECURE_DEBUG true
+#define SECURE_DEBUG
 
 void SecureSocket::getPublicPacket(char *destBuffer, unsigned int destSize) const {
     for(unsigned int i = 0; i < destSize; ++i) destBuffer[i] = 0x00;
@@ -202,27 +202,33 @@ void SecureSocket::sendMessage() {
     this->readMessage(reinterpret_cast<char *>(plaintext), mLength + 1);
 
     // TODO: STEP2 -- send encrypted plaintext length
-    unsigned char plainlen[AES_BLOCK_SIZE * 2] = {0}, cipherlen[AES_BLOCK_SIZE * 2] = {0};
+    unsigned char plainlen[AES_BLOCK_SIZE * 2] = {0}, cipherlen[AES_BLOCK_SIZE * 3] = {0};
     *((unsigned int*)plainlen) = mLength;
     AES_cbc_encrypt(plainlen, cipherlen, AES_BLOCK_SIZE * 2,
             &aeskey, (charkey + aesKeyBitsLength/8), AES_ENCRYPT);
     this->setPackets(reinterpret_cast<char *>(cipherlen), AES_BLOCK_SIZE * 2);
     ReliableSocket::sendMessage();
 #ifdef SECURE_DEBUG
-//    mpz_export(charkey, nullptr, -1, sizeof(unsigned char), -1, 0, exchangedKey);
+//    auto decharkey = new unsigned char [primeBitsLength/8];
+//    mpz_export(decharkey, nullptr, -1, sizeof(unsigned char), -1, 0, exchangedKey);
 //    AES_KEY deaeskey;
-//    AES_set_decrypt_key(charkey, aesKeyBitsLength/8, &deaeskey);
-//    AES_cbc_encrypt(cipherlen, plainlen, AES_BLOCK_SIZE,
-//            &deaeskey, (charkey + aesKeyBitsLength/8), AES_DECRYPT);
+//    AES_set_decrypt_key(decharkey, aesKeyBitsLength/8, &deaeskey);
+//
+//    unsigned char deplainlen [AES_BLOCK_SIZE * 4] = {0};
+//    AES_cbc_encrypt(cipherlen, deplainlen, AES_BLOCK_SIZE * 2,
+//            &deaeskey, (decharkey + aesKeyBitsLength/8), AES_DECRYPT);
+//    delete []decharkey;
     cout << "[Send encrypt] [Key length:" << aesKeyBitsLength << "] " << mLength << endl;
 #endif
 
     // TODO: STEP3 -- send encrypted plaintext
-    auto ciphertext = new unsigned char [mLength + (AES_BLOCK_SIZE - mLength%AES_BLOCK_SIZE)];
+    auto ciphertext = new unsigned char [(mLength/AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE];
+//    for(int i = 0; i < mLength/AES_BLOCK_SIZE; ++i) {
+//        AES_ecb_encrypt(plaintext + i*AES_BLOCK_SIZE, ciphertext + i*AES_BLOCK_SIZE, &aeskey, AES_ENCRYPT);
+//    }
     AES_cbc_encrypt(plaintext, ciphertext, mLength,
             &aeskey, (charkey + aesKeyBitsLength/8), AES_ENCRYPT);
-    this->setPackets(reinterpret_cast<char *>(ciphertext),
-            messageLength + (AES_BLOCK_SIZE - messageLength%AES_BLOCK_SIZE));
+    this->setPackets(reinterpret_cast<char *>(ciphertext), (mLength/AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE);
     ReliableSocket::sendMessage();
 #ifdef SECURE_DEBUG
     cout << "[Send encrypt] [Key length:" << aesKeyBitsLength << "] " << plaintext << endl;

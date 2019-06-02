@@ -43,7 +43,7 @@ private:
      * @param fpacket a formatted packet
      * @return a char array to send to peer side
      */
-    static char* deparsePacket(const formatPacket pac);
+    static char* deparsePacket(formatPacket pac);
 
     formatPacket getShortPacket(unsigned short type);
 
@@ -58,12 +58,23 @@ private:
     char* getCharPacket(unsigned short type, unsigned int length, unsigned int pID, char* content);
 
 public:
-    AppSocket(const char *configPath = "./config.json");
+    /**
+     *   Construct a app socket
+     */
+    explicit AppSocket(const char *configPath);
 
-    AppSocket(unsigned short localPort, const char *configPath = "./config.json");
+    /**
+     *   Construct a app socket with the given local port
+     *   @param localPort local port
+     */
+    AppSocket(unsigned short localPort, const char *configPath);
 
-    AppSocket(const string &localAddress, unsigned short localPort,
-              const char *configPath = "./config.json");
+    /**
+     *   Construct a app socket with the given local port and address
+     *   @param localAddress local address
+     *   @param localPort local port
+     */
+    AppSocket(const string &localAddress, unsigned short localPort, const char *configPath);
 
     ~AppSocket();
 

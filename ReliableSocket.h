@@ -44,7 +44,7 @@ private:
      * @param fpacket a formatted packet
      * @return a char array to send to peer side
      */
-    static char * deparsePacket(const formatPacket fpacket);
+    static char * deparsePacket(formatPacket fpacket);
 
     /**
      * Four function that generate a formatted packet struct
