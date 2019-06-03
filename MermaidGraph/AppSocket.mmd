@@ -1,0 +1,18 @@
+sequenceDiagram
+
+participant Client;
+participant Server;
+
+Client->>Server: JOIN_REQ
+
+Server->>Client: PASS_REQ
+loop auth 3 times
+    Client->>Server: PASS_RESP
+    alt is true
+	    Server->>Client: PASS_ACCEPT
+    else is false
+    	Server->>Client: PASS_REJECT
+    end
+end
+Server->>Client: DATA
+Client->>Server: TERMINATE

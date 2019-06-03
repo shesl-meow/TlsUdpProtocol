@@ -81,3 +81,25 @@
 
 [![asciicast](https://asciinema.org/a/d47IeHxNzAjK6U8QeNHdnWC0u.svg)](https://asciinema.org/a/d47IeHxNzAjK6U8QeNHdnWC0u)
 
+## `AppSocket`
+
+`AppSocket` 按照实验要求，在 client 与 server 建立连接之后传递指定信息，
+
+信息的格式为：
+
+| 2 bytes  |     4 bytes     | 2 bytes (optional) | <1000 bytes (optional) |
+| :------: | :-------------: | :----------------: | :--------------------: |
+| `Header` | `PayloadLength` |     `PacketID`     |       `Content`        |
+
+`content` 中可以存储 `password`，`digest` 或者 `data`
+
+通过函数进行整合与拆解，方便获得各部分信息。
+
+最后根据实验要求的流程，使两端收发信息，并在密码错误，`sha1` 检测失败等情况下报错。
+
+为了使得 server 端得知 digest 码比对是否成功，client 会在比对 digest 码之后发送一个包确认是否成功收到（准确）信息，这样最终可以两端同时输出 OK/ABORT。
+
+传输的实例图如下：
+
+<img src="./AppSocket.svg" width=50%/>
+
