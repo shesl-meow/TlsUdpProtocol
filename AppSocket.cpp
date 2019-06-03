@@ -16,13 +16,13 @@
 #endif
 
 // HEADER signature bits
-#define JOIN_REQ 0x01
-#define PASS_REQ 0x02
-#define PASS_RESP 0x04
-#define PASS_ACCEPT 0x08
-#define DATA 0x010
-#define TERMINATE 0x20
-#define REJECT 0x40
+#define JOIN_REQ 0x01u
+#define PASS_REQ 0x02u
+#define PASS_RESP 0x04u
+#define PASS_ACCEPT 0x08u
+#define DATA 0x010u
+#define TERMINATE 0x20u
+#define PASS_REJECT 0x40u
 
 #define APP_DEBUG true
 
@@ -75,7 +75,8 @@ AppSocket::formatPacket AppSocket::getShortPacket(unsigned short type)
     fpac.payloadLength = 0;
     return fpac;
 }
-AppSocket::formatPacket AppSocket::getMediumPacket(unsigned short type, unsigned int length, char* content)
+AppSocket::formatPacket AppSocket::getMediumPacket(
+        unsigned short type, unsigned int length, char* content)
 {
     //length(bytes)
     formatPacket fpac;
@@ -116,10 +117,22 @@ char* AppSocket::getCharPacket(unsigned short type, unsigned int length, unsigne
     return pac;
 }
 
-void AppSocket::getSha1Hash(const char *srcBuffer, size_t srcSize, unsigned char destBuffer[20]) {
+void AppSocket::getHashValue(const char *srcBuffer,
+        size_t srcSize, unsigned char destBuffer[20]) {
     SHA_CTX	c; SHA1_Init(&c);
+    char *saltSrc = new char [srcSize + hashSalt.size()];
+    memcpy(saltSrc, srcBuffer, srcSize);
+    memcpy(saltSrc + srcSize, hashSalt.c_str(), hashSalt.size());
     SHA1_Update(&c, srcBuffer, srcSize);
     SHA1_Final(destBuffer, &c);
+    delete []saltSrc;
+}
+
+bool AppSocket::checkPassword(const unsigned char *passHashBuffer, size_t bufferSize) {
+    unsigned char correctHashBuffer[20];
+    getHashValue(bindPassword, strlen(bindPassword), correctHashBuffer);
+    return (strcmp(reinterpret_cast<const char*>(passHashBuffer),
+                       reinterpret_cast<const char*>(correctHashBuffer)) == 0);
 }
 
 AppSocket::AppSocket(const char *configPath) : SecureSocket(configPath) {}
@@ -172,15 +185,95 @@ void AppSocket::setPassword(const char *password, size_t passwdLen) {
 }
 
 void AppSocket::startListen() {
+    if (bindPassword == nullptr)
+        throw SocketException("Please bind password before listen.", false);
     SecureSocket::startListen();
-    auto joinPacket = getShortPacket(JOIN_REQ);
-    auto jpacket = deparsePacket(joinPacket);
+    // TODO: STEP1 -- received JOIN_REQ packet from client side.
+    SecureSocket::receiveMessage();
+    char *buffer = new char [messageLength + 1];
+    this->readMessage(buffer, messageLength + 1);
+    auto fpacket = parsePacket(buffer);
+    if ((fpacket.header & JOIN_REQ) == 0u)
+        throw SocketException("Received a none JOIN_REQ packet.");
+#ifdef APP_DEBUG
+    cout << "[Receive message] JOIN_REQ packet received: " << endl;
+#endif
+    delete []buffer; delete []fpacket.body;
 
-    delete []joinPacket.body; delete []jpacket;
+    // TODO: STEP2 -- send PASS_REQ packet to client side
+    auto passPacket = getShortPacket(PASS_REQ);
+    auto ppacket = deparsePacket(passPacket);
+    this->setPackets(ppacket, passPacket.payloadLength + 6);
+    SecureSocket::sendMessage();
+    delete []passPacket.body; delete []ppacket;
+}
+
+void AppSocket::startAuthenticate() {
+    // TODO: STEP1 -- receive & validate for `passMaxTryTimes`.
+    auto rejectPacket = getShortPacket(PASS_REJECT);
+    auto acceptPacket = getShortPacket(PASS_ACCEPT);
+    char *rpacket = deparsePacket(rejectPacket);
+    char *apacket = deparsePacket(acceptPacket);
+    for(passwdTryTimes = 0; passwdTryTimes < passwdMaxTryTimes; ++passwdTryTimes){
+        SecureSocket::receiveMessage();
+        auto buffer = new char [messageLength + 1];
+        auto prpacket = parsePacket(buffer);
+        if ((prpacket.header & PASS_RESP) == 0u)
+            throw SocketException("Received a none PASS_RESP packet.");
+        delete []buffer;
+        if (checkPassword(
+                reinterpret_cast<const unsigned char *>(prpacket.body),
+                prpacket.payloadLength)
+                ) {
+        #ifdef APP_DEBUG
+            cout << "[Password received] Client password has been accept. [Times "
+                 << passwdTryTimes << "/" << passwdMaxTryTimes << "]" << endl;
+        #endif
+            delete []prpacket.body;
+            this->setPackets(apacket, acceptPacket.payloadLength + 6);
+            SecureSocket::sendMessage();
+            break;
+        } else {
+        #ifdef APP_DEBUG
+            cout << "[Password received] Client send a invalid password. [Times "
+                 << passwdTryTimes << "/" << passwdMaxTryTimes << "]" << endl;
+        #endif
+            delete []prpacket.body;
+            this->setPackets(rpacket, rejectPacket.payloadLength + 6);
+            SecureSocket::sendMessage();
+        }
+    }
+    delete []rejectPacket.body; delete []acceptPacket.body;
+    delete []rpacket; delete []apacket;
+
+    // TODO: STEP2 -- terminate if max try times reach
+    if (passwdTryTimes == passwdMaxTryTimes) {
+    #ifdef APP_DEBUG
+        cout << "[Password received] Reach the max try times. Terminate." << endl;
+    #endif
+        auto terminatePacket = getMediumPacket(TERMINATE, 0, nullptr);
+        auto tpacket = deparsePacket(terminatePacket);
+        this->setPackets(tpacket, terminatePacket.payloadLength + 6);
+        SecureSocket::sendMessage();
+        delete []tpacket; delete []terminatePacket.body;
+    }
 }
 
 void AppSocket::connectForeignAddressPort(const string &address, unsigned short port) {
     SecureSocket::connectForeignAddressPort(address, port);
+
+    // TODO: STEP1 -- send JOIN_REQ packet to server side.
+    auto joinPacket = getShortPacket(JOIN_REQ);
+    auto jpacket = deparsePacket(joinPacket);
+    this->setPackets(jpacket, joinPacket.payloadLength + 6);
+    SecureSocket::sendMessage();
+    delete []joinPacket.body; delete []jpacket;
+#ifdef APP_DEBUG
+    cout << "[Send Message] sent JOIN_REQ packet" << endl;
+#endif
+
+    // TODO: STEP2 -- received PASS_REQ packet from server side.
+    char *buffer
 }
 
 int AppSocket::connectToServer(const char* passCat, int passLen, const char* add)
@@ -223,7 +316,7 @@ int AppSocket::connectToServer(const char* passCat, int passLen, const char* add
     recvPacket(readbuf, type, length, pID, getContent);
     if (type != PASS_ACCEPT)
     {
-        if (type == REJECT)
+        if (type == PASS_REJECT)
             cout << "pw error" << endl;
         cout << "ABORT" << endl;
         return -1;
@@ -303,7 +396,7 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
     recvPacket(readbuf, type, length, pID, getContent);
     if (type != PASS_RESP || !checkPassword(getContent, length, pass, passLen))
     {
-        sendContent = getCharPacket(REJECT);
+        sendContent = getCharPacket(PASS_REJECT);
         setPackets(sendContent);
         sendMessage();
         cout << "ABORT(wrong pw)" << endl;

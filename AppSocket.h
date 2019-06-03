@@ -63,7 +63,15 @@ private:
      * @param srcSize source buffer size
      * @param destBuffer destination buffer size with 20 bytes fix array.
      */
-    static void getSha1Hash(const char *srcBuffer, size_t srcSize, unsigned char destBuffer[20]);
+    void getHashValue(const char *srcBuffer, size_t srcSize, unsigned char destBuffer[20]);
+
+    /**
+     * check if password is correct by password hash
+     * @param passHashBuffer password hash buffer contains the hash value to be check
+     * @param bufferSize hash buffer size
+     * @return true if the hash value is correct.
+     */
+    bool checkPassword(const unsigned char *passHashBuffer, size_t bufferSize);
 
 public:
     /**
@@ -112,6 +120,11 @@ public:
     void startListen() override;
 
     /**
+     * Waiting for the client password request, authenticate it.
+     */
+    void startAuthenticate();
+
+    /**
      * Client side socket should call this function bind its peer address and port,
      *     and send the first handshake packet.
      * Override parent `connectForeignAddressPort` for password validation.
@@ -119,6 +132,8 @@ public:
      * @param port Foreign peer port
      */
     void connectForeignAddressPort (const string& address, unsigned short port) override;
+
+    bool sendAuthenticate();
 
     //passCat = 3 * password, connect with ','
     int connectToServer(const char* passCat, int passLen, const char* add);
@@ -156,6 +171,11 @@ protected:
      * Server side validate password with this; Client side send this in PASS_RESP
      */
     char *bindPassword = nullptr;
+
+    /**
+     * Used when hash value is calculate.
+     */
+    string hashSalt = "SOME_SECRET";
 };
 
 
