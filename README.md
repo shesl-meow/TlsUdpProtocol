@@ -103,3 +103,6 @@
 
 <img src="./AppSocket.svg" width=50%/>
 
+以下是可执行文件 `Server/AppServer.cpp` 与 `Client/AppClient.cpp` 的演示视频：
+
+[![asciicast](https://asciinema.org/a/249778.svg)](https://asciinema.org/a/249778)
