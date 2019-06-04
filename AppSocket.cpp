@@ -25,7 +25,7 @@
 #define DATA 0x010
 #define TERMINATE 0x20
 #define REJECT 0x40
-
+#define DATA_SUC 0x80
 
 AppSocket::formatPacket AppSocket::parsePacket(const char *pac) {
     formatPacket fpac;
@@ -136,7 +136,7 @@ int AppSocket::connectToServer(const char* passCat, int passLen, const char* add
 {
     char* sendContent;
     char* getContent = new char[DATA_SIZE];
-    char* readbuf = new char[READ_BUF_SIZE];
+    char* readbuf = new char[READ_BUF_SIZE+1];
     //char* pac;
     //formatPacket getPac;
     unsigned short type;
@@ -180,17 +180,20 @@ int AppSocket::connectToServer(const char* passCat, int passLen, const char* add
     else
     {
         char* wbuf = new char[STRING_MAX];
-        wbuf[0] = 0;
+		memset(wbuf, 0, STRING_MAX);
+		int tempID = 1;
+		bool isError = false;
         while (true)
         {
-            int tempID = 1;
+            
             receiveMessage();
-            readMessage(readbuf, READ_BUF_SIZE);
+			delete[]readbuf;
+			readbuf = new char[READ_BUF_SIZE + 1];
+            readMessage(readbuf, READ_BUF_SIZE+1);
             recvPacket(readbuf, type, length, pID, getContent);
             if (pID != 0 && tempID != pID)
             {
-                cout << "ABORT" << endl;
-                return -1;
+				isError = true;
             }
             tempID++;
             if (type == TERMINATE)
@@ -201,21 +204,35 @@ int AppSocket::connectToServer(const char* passCat, int passLen, const char* add
                     if (sha[i] != getContent[i])
                     {
                         cout << "ABORT" << endl;
-                        return -1;
+						isError = true;
                     }
                 }
                 break;
             }
             else
             {
-                strcat(wbuf, getContent);
-            }
+				memcpy(wbuf + (tempID - 2) * 1000, getContent, 1000);
+			}
         }
         ofstream outfile;
         outfile.open(add);
         outfile << wbuf;
         outfile.close();
-        cout << "OK" << endl;
+		
+		if (isError == false)
+		{
+			sendContent = getCharPacket(DATA_SUC);
+			setPackets(sendContent, 6);
+			sendMessage();
+			cout << "OK" << endl;
+		}
+		else
+		{
+			sendContent = getCharPacket(REJECT);
+			setPackets(sendContent, 6);
+			sendMessage();
+			cout << "ABORT" << endl;
+		}
     }
     return 0;
 }
@@ -224,7 +241,7 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
 {
     char* sendContent;
     char* getContent = new char[DATA_SIZE];
-    char* sendbuf = new char[DATA_SIZE];
+    char* sendbuf = new char[DATA_SIZE+1];
     char* readbuf = new char[READ_BUF_SIZE];
     unsigned short type;
     unsigned int length;
@@ -269,7 +286,7 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
         int data_len;
         for (int i = 1;; i++)
         {
-            infile.get(sendbuf, DATA_SIZE, EOF);
+            infile.get(sendbuf, DATA_SIZE+1, EOF);
             data_len = strlen(sendbuf);
             if (data_len == 0)
                 break;
@@ -286,7 +303,13 @@ int AppSocket::connectToClient(const char* pass, int passLen, const char* add)
         sendContent = getCharPacket(TERMINATE, 20, shaResult);
         setPackets(sendContent,6+20);
         sendMessage();
-        cout << "OK" << endl;
+		receiveMessage();
+		readMessage(readbuf, READ_BUF_SIZE);
+		recvPacket(readbuf, type, length, pID, getContent);
+		if (type == DATA_SUC)
+			cout << "OK" << endl;
+		else
+			cout << "ABORT" << endl;
         return 0;
     }
 }
