@@ -105,3 +105,6 @@ CMakeFiles/
 CMakeCache.txt
 test.txt
 test.recv.txt
+
+# mac os x
+.DS_Store
