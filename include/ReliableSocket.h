@@ -5,7 +5,7 @@
 #ifndef TLSUDPPROTOCOL_RELIABLESOCKET_H
 #define TLSUDPPROTOCOL_RELIABLESOCKET_H
 
-#include "./UdpSocket.h"
+#include "UdpSocket.h"
 
 #include <chrono>               // chrono::milliseconds timeoutInterval
 #include <vector>               // vector<char *> packetBuffer & vector<mutex> packetsMutex

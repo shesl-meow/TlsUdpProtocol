@@ -38,7 +38,7 @@
 
 `ReliableSocket` 建立大致的连接过程（有过调整）与外界调用的 `API`：
 
-<img src="./ReliableSocket.svg" width=56%/><img src="./ReliableSocketAPI.svg" width=44%/>
+<img src="./MermaidGraph/ReliableSocket.svg" width=56%/><img src="./ReliableSocketAPI.svg" width=44%/>
 
 以下是可执行文件 `TestClass/ReliableServer.cpp` 与 `TestClass/ReliableTelnet.cpp` 的演示视频：
 
@@ -75,7 +75,7 @@
 
 传输示例图如下：
 
-<img src="./SecureSocket.svg" width=50%>
+<img src="./MermaidGraph/SecureSocket.svg" width=50%>
 
 以下是可执行文件 `TestClass/SecureServer.cpp` 与 `TestClass/SecureTelnet.cpp` 的演示视频：
 
@@ -101,7 +101,7 @@
 
 传输的实例图如下：
 
-<img src="./AppSocket.svg" width=50%/>
+<img src="./MermaidGraph/AppSocket.svg" width=50%/>
 
 以下是可执行文件 `Server/AppServer.cpp` 与 `Client/AppClient.cpp` 的演示视频：
 

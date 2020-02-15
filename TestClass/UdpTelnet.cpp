@@ -21,7 +21,7 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "../UdpSocket.h"      // For UDPSocket and SocketException
+#include "../include/UdpSocket.h"      // For UDPSocket and SocketException
 #include <iostream>               // For cout and cerr
 #include <cstdlib>                // For atoi()
 #include <cstring>                // For strlen()

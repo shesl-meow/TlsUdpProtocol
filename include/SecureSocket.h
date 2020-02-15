@@ -5,7 +5,7 @@
 #ifndef TLSUDPPROTOCOL_SECURESOCKET_H
 #define TLSUDPPROTOCOL_SECURESOCKET_H
 
-#include "./ReliableSocket.h"
+#include "ReliableSocket.h"
 
 #include <gmp.h>    // for big integer
 
